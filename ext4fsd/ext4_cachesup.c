@@ -60,15 +60,24 @@ void ext4_cache_sync_uninit_map(
 	NT_ASSERT(wait_status == STATUS_SUCCESS);
 }
 
+/**
+ * @brief This routine is a wraper to CcPinRead.
+ */
 __bool ext4_cache_pin_read(
 		PFILE_OBJECT file_object,
 		__s64 file_offset,
 		ULONG len,
-		__bool zero,
-		ULONG flags,
+		__bool wait,
+		__bool exclusive,
 		void **bcb,
 		void **buf)
 {
+	ULONG flags = 0;
+	if (wait)
+		flags = PIN_WAIT;
+	if (exclusive)
+		flags |= PIN_EXCLUSIVE;
+
 	return CcPinRead(
 				file_object,
 				(PLARGE_INTEGER)&file_offset,
@@ -78,15 +87,22 @@ __bool ext4_cache_pin_read(
 				buf);
 }
 
+/**
+ * @brief This routine is a wraper to CcPreparePinWrite.
+ */
 __bool ext4_cache_pin_write(
 		PFILE_OBJECT file_object,
 		__s64 file_offset,
 		ULONG len,
 		__bool zero,
-		ULONG flags,
+		__bool wait,
 		void **bcb,
 		void **buf)
 {
+	ULONG flags = PIN_EXCLUSIVE;
+	if (wait)
+		flags |= PIN_WAIT;
+
 	return CcPreparePinWrite(
 				file_object,
 				(PLARGE_INTEGER)&file_offset,
@@ -97,21 +113,33 @@ __bool ext4_cache_pin_write(
 				buf);
 }
 
+/**
+ * @brief This routine is a wraper to CcSetDirtyPinnedData.
+ */
 void ext4_cache_set_dirty(void *bcb, __u32 lsn)
 {
 	CcSetDirtyPinnedData(bcb, lsn);
 }
 
+/**
+ * @brief This routine is a wraper to CcUnpinData.
+ */
 void ext4_cache_unpin_bcb(void *bcb)
 {
 	CcUnpinData(bcb);
 }
 
+/**
+ * @brief This routine is a wraper to CcRepinBcb.
+ */
 void ext4_cache_repin_bcb(void *bcb)
 {
 	CcRepinBcb(bcb);
 }
 
+/**
+ * @brief This routine is a wraper to CcUnpinRepinnedBcb.
+ */
 void ext4_cache_unpin_repinned_bcb(void *bcb)
 {
 	IO_STATUS_BLOCK io_status;

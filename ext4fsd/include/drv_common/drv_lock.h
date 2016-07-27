@@ -6,13 +6,13 @@
 
 #include <ntifs.h>
 
-#include "ext4_types.h"
+#include "drv_types.h"
 
 /*
  * Definition of read-write lock and mutex
  */
-typedef ERESOURCE ext4_res_t;
-typedef FAST_MUTEX ext4_mutex_t;
+typedef ERESOURCE drv_res_t;
+typedef FAST_MUTEX drv_mutex_t;
 
 /**
  * @brief	Initialize an resource
@@ -21,7 +21,7 @@ typedef FAST_MUTEX ext4_mutex_t;
  *
  * @return	STATUS_SUCCESS if the operation succeeds.
  */
-static inline NTSTATUS ext4_resource_init(ext4_res_t *resource)
+static inline NTSTATUS drv_resource_init(drv_res_t *resource)
 {
 	return ExInitializeResourceLite(resource);
 }
@@ -33,7 +33,7 @@ static inline NTSTATUS ext4_resource_init(ext4_res_t *resource)
  *
  * @return	STATUS_SUCCESS if the operation succeeds.
  */
-static inline NTSTATUS ext4_resource_destroy(ext4_res_t *resource)
+static inline NTSTATUS drv_resource_destroy(drv_res_t *resource)
 {
 	return ExDeleteResourceLite(resource);
 }
@@ -48,7 +48,7 @@ static inline NTSTATUS ext4_resource_destroy(ext4_res_t *resource)
  *			If the operation can't succeed without blocking,
  *			STATUS_CANT_WAIT will be returned.
  */
-static inline NTSTATUS ext4_resource_acquire_shared(ext4_res_t *resource, __bool wait)
+static inline NTSTATUS drv_resource_acquire_shared(drv_res_t *resource, __bool wait)
 {
 	return (ExAcquireResourceSharedLite(resource, wait) == TRUE) ?
 				STATUS_SUCCESS :
@@ -65,7 +65,7 @@ static inline NTSTATUS ext4_resource_acquire_shared(ext4_res_t *resource, __bool
  *			If the operation can't succeed without blocking,
  *			STATUS_CANT_WAIT will be returned.
  */
-static inline NTSTATUS ext4_resource_acquire_exclusive(ext4_res_t *resource, __bool wait)
+static inline NTSTATUS drv_resource_acquire_exclusive(drv_res_t *resource, __bool wait)
 {
 	return (ExAcquireResourceSharedLite(resource, wait) == TRUE) ?
 				STATUS_SUCCESS :
@@ -77,7 +77,7 @@ static inline NTSTATUS ext4_resource_acquire_exclusive(ext4_res_t *resource, __b
  *
  * @param resource	The resource to be released
  */
-static inline void ext4_resource_release(ext4_res_t *resource)
+static inline void drv_resource_release(drv_res_t *resource)
 {
 	ExReleaseResourceLite(resource);
 }
@@ -87,7 +87,7 @@ static inline void ext4_resource_release(ext4_res_t *resource)
  *
  * @param resource	The access to resource to be downgraded
  */
-static inline void ext4_resource_acquire_downgrade(ext4_res_t *resource)
+static inline void drv_resource_acquire_downgrade(drv_res_t *resource)
 {
 	ExConvertExclusiveToSharedLite(resource);
 }
@@ -97,7 +97,7 @@ static inline void ext4_resource_acquire_downgrade(ext4_res_t *resource)
  *
  * @return	The number of times the caller has acquired the resource
  */
-static inline ULONG ext4_resource_acquired_count(ext4_res_t *resource)
+static inline ULONG drv_resource_acquired_count(drv_res_t *resource)
 {
 	return ExIsResourceAcquiredLite(resource);
 }
@@ -107,7 +107,7 @@ static inline ULONG ext4_resource_acquired_count(ext4_res_t *resource)
  *
  * @return	Whether the resource is acquired exclusively
  */
-static inline __bool ext4_resource_is_acquired_exclusively(ext4_res_t *resource)
+static inline __bool drv_resource_is_acquired_exclusively(drv_res_t *resource)
 {
 	return !!ExIsResourceAcquiredExclusiveLite(resource);
 }
@@ -117,7 +117,7 @@ static inline __bool ext4_resource_is_acquired_exclusively(ext4_res_t *resource)
  *
  * @param mutex	The mutex to be initialized
  */
-static inline void ext4_mutex_init(ext4_mutex_t *mutex)
+static inline void drv_mutex_init(drv_mutex_t *mutex)
 {
 	ExInitializeFastMutex(mutex);
 }
@@ -134,7 +134,7 @@ static inline void ext4_mutex_init(ext4_mutex_t *mutex)
  *			be acquired exclusively, STATUS_CANT_WAIT will
  *			be returned
  */
-static inline NTSTATUS ext4_mutex_acquire(ext4_mutex_t *mutex, __bool wait)
+static inline NTSTATUS drv_mutex_acquire(drv_mutex_t *mutex, __bool wait)
 {
 	if (wait) {
 		ExAcquireFastMutex(mutex);
@@ -150,7 +150,7 @@ static inline NTSTATUS ext4_mutex_acquire(ext4_mutex_t *mutex, __bool wait)
  *
  * @param mutex	The mutex to be released
  */
-static inline void ext4_mutex_release(ext4_mutex_t *mutex)
+static inline void drv_mutex_release(drv_mutex_t *mutex)
 {
 	ExReleaseFastMutex(mutex);
 }

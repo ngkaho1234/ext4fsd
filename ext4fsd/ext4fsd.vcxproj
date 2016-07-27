@@ -42,7 +42,11 @@
     <ClCompile Include="ext4_create.c" />
     <ClCompile Include="ext4_data.c" />
     <ClCompile Include="ext4_extent.c" />
+    <ClCompile Include="ext4_fsctrl.c" />
     <ClCompile Include="ext4_init.c" />
+    <ClCompile Include="ext4_txn.c" />
+    <ClCompile Include="jbd2\jbd2.c" />
+    <ClCompile Include="jbd2\jbd2_recover.c" />
   </ItemGroup>
   <ItemGroup>
     <Inf Include="ext4fsd.inf" />
@@ -230,13 +234,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ext4_fs.h" />
+    <ClInclude Include="include\drv_common\drv_atomic.h" />
+    <ClInclude Include="include\drv_common\drv_endian.h" />
+    <ClInclude Include="include\drv_common\drv_lock.h" />
+    <ClInclude Include="include\drv_common\drv_rbtree.h" />
+    <ClInclude Include="include\drv_common\drv_types.h" />
     <ClInclude Include="include\ext4.h" />
-    <ClInclude Include="include\ext4_atomic.h" />
     <ClInclude Include="include\ext4_data.h" />
-    <ClInclude Include="include\ext4_endian.h" />
-    <ClInclude Include="include\ext4_lock.h" />
-    <ClInclude Include="include\ext4_rbtree.h" />
-    <ClInclude Include="include\ext4_types.h" />
+    <ClInclude Include="jbd2\jbd2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

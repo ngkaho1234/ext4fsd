@@ -26,21 +26,11 @@ typedef __u64				__be64;
 
  typedef BOOLEAN			__bool;
 
-#include "ext4_endian.h"
+#include "drv_endian.h"
 
-typedef __u64				ext4_fsblk_t;
-typedef __u32				ext4_lblk_t;
-typedef __u32				ext4_grpblk_t;
-typedef __u32				ext4_ino_t;
-typedef __u32				ext4_group_t;
-
-struct ext4_timespec {
+struct drv_timespec {
 	__s64 tv_sec;			/* Seconds */
 	__s64 tv_nsec;			/* Nanoseconds */
 };
 
-typedef __u32				ext4_uid_t;
-typedef __u32				ext4_gid_t;
-typedef __u32				ext4_umode_t;
-
-#include "ext4_atomic.h"
+#include "drv_atomic.h"
