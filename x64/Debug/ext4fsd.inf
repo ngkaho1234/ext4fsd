@@ -1,0 +1,93 @@
+;
+; ext4fsd.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Sample ; TODO: edit Class
+ClassGuid={78A1C341-4539-11d3-B88D-00C04FAD5171} ; TODO: edit ClassGuid
+Provider=%ManufacturerName%
+CatalogFile=ext4fsd.cat
+DriverVer=07/22/2016,17.0.47.134
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg=SampleClassReg
+
+[SampleClassReg]
+HKR,,,0,%ClassName%
+HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+ext4fsd.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%ext4fsd.DeviceDesc%=ext4fsd_Device, Root\ext4fsd ; TODO: edit hw-id
+
+[ext4fsd_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+ext4fsd.sys
+
+;-------------- Service installation
+[ext4fsd_Device.NT.Services]
+AddService = ext4fsd,%SPSVCINST_ASSOCSERVICE%, ext4fsd_Service_Inst
+
+; -------------- ext4fsd driver install sections
+[ext4fsd_Service_Inst]
+DisplayName    = %ext4fsd.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\ext4fsd.sys
+
+;
+;--- ext4fsd_Device Coinstaller installation ------
+;
+
+[DestinationDirs]
+ext4fsd_Device_CoInstaller_CopyFiles = 11
+
+[ext4fsd_Device.NT.CoInstallers]
+AddReg=ext4fsd_Device_CoInstaller_AddReg
+CopyFiles=ext4fsd_Device_CoInstaller_CopyFiles
+
+[ext4fsd_Device_CoInstaller_AddReg]
+;
+
+
+[ext4fsd_Device_CoInstaller_CopyFiles]
+;
+
+
+[SourceDisksFiles]
+;
+
+
+[ext4fsd_Device.NT.Wdf]
+KmdfService =  ext4fsd, ext4fsd_wdfsect
+[ext4fsd_wdfsect]
+KmdfLibraryVersion = 1.15
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+ClassName="Samples" ; TODO: edit ClassName
+DiskName = "ext4fsd Installation Disk"
+ext4fsd.DeviceDesc = "ext4fsd Device"
+ext4fsd.SVCDESC = "ext4fsd Service"
