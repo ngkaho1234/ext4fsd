@@ -1,132 +1,203 @@
 ﻿  Building 'ext4fsd' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
-  Stamping x64\Debug\ext4fsd.inf [Version] section with DriverVer=07/22/2016,17.0.47.134
+  Stamping x64\Debug\ext4fsd.inf [Version] section with DriverVer=07/27/2016,5.38.47.612
+  ext4_cachesup.c
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): error C2220: warning treated as error - no 'object' file generated
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): warning C4115: 'ext4_timespec': named type definition in parentheses
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(247): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(248): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): warning C4033: 'ext4_encode_extra_time' must return a value
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(254): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(269): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(272): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(947): warning C4161: #pragma pack(pop...): more pops than pushes
+ext4_cachesup.c(121): warning C4047: 'function': 'PLARGE_INTEGER' differs in levels of indirection from '__u32'
+ext4_cachesup.c(121): warning C4024: 'CcSetDirtyPinnedData': different types for formal and actual parameter 2
   ext4_create.c
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): error C2220: warning treated as error - no 'object' file generated
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): warning C4115: 'ext4_timespec': named type definition in parentheses
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(247): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(248): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): warning C4033: 'ext4_encode_extra_time' must return a value
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(254): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(269): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(272): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(947): warning C4161: #pragma pack(pop...): more pops than pushes
   ext4_data.c
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): error C2220: warning treated as error - no 'object' file generated
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): warning C4115: 'ext4_timespec': named type definition in parentheses
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(247): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(248): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): warning C4033: 'ext4_encode_extra_time' must return a value
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(254): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(269): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(272): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(947): warning C4161: #pragma pack(pop...): more pops than pushes
   ext4_extent.c
-ext4_extent.c(42): error C2220: warning treated as error - no 'object' file generated
-ext4_extent.c(42): warning C4115: 'ext4_extent_header': named type definition in parentheses
-ext4_extent.c(45): error C4013: 'EXT4_EXTENT_TAIL_OFFSET' undefined; assuming extern returning int
-ext4_extent.c(48): warning C4115: 'ext4_inode': named type definition in parentheses
-ext4_extent.c(50): error C2037: left of 'blocks' specifies undefined struct/union 'ext4_inode'
-ext4_extent.c(50): warning C4033: 'ext_inode_hdr' must return a value
-ext4_extent.c(53): warning C4115: 'ext4_block': named type definition in parentheses
-ext4_extent.c(55): error C2037: left of 'data' specifies undefined struct/union 'ext4_block'
-ext4_extent.c(55): warning C4033: 'ext_block_hdr' must return a value
-ext4_extent.c(58): error C2061: syntax error: identifier 'ext_depth'
-ext4_extent.c(58): error C2059: syntax error: ';'
-ext4_extent.c(58): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(63): error C2061: syntax error: identifier 'ext4_ext_get_actual_len'
-ext4_extent.c(63): error C2059: syntax error: ';'
-ext4_extent.c(63): warning C4115: 'ext4_extent': named type definition in parentheses
-ext4_extent.c(63): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(72): error C2037: left of 'block_count' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(72): error C4013: 'to_le16' undefined; assuming extern returning int
-ext4_extent.c(72): error C4013: 'ext4_ext_get_actual_len' undefined; assuming extern returning int
-ext4_extent.c(77): error C2037: left of 'block_count' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(77): error C2065: 'EXT_INIT_MAX_LEN': undeclared identifier
-ext4_extent.c(83): error C2037: left of 'block_count' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(83): error C2065: 'EXT_INIT_MAX_LEN': undeclared identifier
-ext4_extent.c(94): error C4013: 'to_le32' undefined; assuming extern returning int
-ext4_extent.c(94): error C2037: left of 'start_lo' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(95): error C2037: left of 'start_hi' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(103): warning C4115: 'ext4_extent_index': named type definition in parentheses
-ext4_extent.c(107): error C2037: left of 'leaf_lo' specifies undefined struct/union 'ext4_extent_index'
-ext4_extent.c(108): error C2037: left of 'leaf_hi' specifies undefined struct/union 'ext4_extent_index'
-ext4_extent.c(119): error C2037: left of 'start_lo' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(119): error C2065: 'uint32_t': undeclared identifier
-ext4_extent.c(119): error C2064: term does not evaluate to a function taking 337 arguments
-ext4_extent.c(120): error C2037: left of 'start_hi' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(120): error C2065: 'uint16_t': undeclared identifier
-ext4_extent.c(120): error C2064: term does not evaluate to a function taking 337 arguments
-ext4_extent.c(130): error C2037: left of 'leaf_lo' specifies undefined struct/union 'ext4_extent_index'
-ext4_extent.c(130): error C2065: 'uint32_t': undeclared identifier
-ext4_extent.c(130): error C2064: term does not evaluate to a function taking 337 arguments
-ext4_extent.c(131): error C2037: left of 'leaf_hi' specifies undefined struct/union 'ext4_extent_index'
-ext4_extent.c(131): error C2065: 'uint16_t': undeclared identifier
-ext4_extent.c(131): error C2064: term does not evaluate to a function taking 337 arguments
-ext4_extent.c(134): warning C4115: 'ext4_inode_ref': named type definition in parentheses
-ext4_extent.c(137): error C4013: 'ext4_balloc_alloc_block' undefined; assuming extern returning int
-ext4_extent.c(142): error C2146: syntax error: missing ')' before identifier 'flags'
-ext4_extent.c(142): error C2081: 'uint32_t': name in formal parameter list illegal
-ext4_extent.c(142): error C2061: syntax error: identifier 'flags'
-ext4_extent.c(142): error C2059: syntax error: ';'
-ext4_extent.c(143): error C2143: syntax error: missing ';' before '*'
-ext4_extent.c(143): warning C4218: nonstandard extension used: must specify at least a storage class or a type
-ext4_extent.c(143): error C2059: syntax error: 'type'
-ext4_extent.c(143): error C2059: syntax error: ')'
-ext4_extent.c(154): error C2146: syntax error: missing ')' before identifier 'count'
-ext4_extent.c(154): error C2081: 'uint32_t': name in formal parameter list illegal
-ext4_extent.c(154): error C2061: syntax error: identifier 'count'
-ext4_extent.c(154): error C2059: syntax error: ';'
-ext4_extent.c(154): error C2059: syntax error: ','
-ext4_extent.c(155): error C2059: syntax error: ')'
-ext4_extent.c(160): error C2061: syntax error: identifier 'ext4_ext_space_block'
-ext4_extent.c(160): error C2059: syntax error: ';'
-ext4_extent.c(160): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(174): error C2061: syntax error: identifier 'ext4_ext_space_block_idx'
-ext4_extent.c(174): error C2059: syntax error: ';'
-ext4_extent.c(174): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(188): error C2061: syntax error: identifier 'ext4_ext_space_root'
-ext4_extent.c(188): error C2059: syntax error: ';'
-ext4_extent.c(188): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(202): error C2061: syntax error: identifier 'ext4_ext_space_root_idx'
-ext4_extent.c(202): error C2059: syntax error: ';'
-ext4_extent.c(202): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(216): error C2061: syntax error: identifier 'ext4_ext_max_entries'
-ext4_extent.c(216): error C2059: syntax error: ';'
-ext4_extent.c(216): error C2059: syntax error: '<parameter-list>'
-ext4_extent.c(237): warning C4115: 'ext4_extent_path': named type definition in parentheses
-ext4_extent.c(241): error C2146: syntax error: missing ';' before identifier 'depth'
-ext4_extent.c(241): error C2065: 'depth': undeclared identifier
-ext4_extent.c(241): error C2037: left of 'depth' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(261): error C2065: 'depth': undeclared identifier
-ext4_extent.c(261): error C2037: left of 'extent' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(264): error C2037: left of 'first_block' specifies undefined struct/union 'ext4_extent'
-ext4_extent.c(274): error C2065: 'depth': undeclared identifier
-ext4_extent.c(274): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(275): error C2065: 'depth': undeclared identifier
-ext4_extent.c(275): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(275): warning C4033: 'ext4_ext_find_goal' must return a value
-ext4_extent.c(279): error C4013: 'ext4_fs_inode_to_goal_block' undefined; assuming extern returning int
-ext4_extent.c(288): error C2146: syntax error: missing ')' before identifier 'flags'
-ext4_extent.c(288): error C2081: 'uint32_t': name in formal parameter list illegal
-ext4_extent.c(288): error C2061: syntax error: identifier 'flags'
-ext4_extent.c(288): error C2059: syntax error: ';'
-ext4_extent.c(288): error C2059: syntax error: ')'
-ext4_extent.c(289): error C2449: found '{' at file scope (missing function header?)
-ext4_extent.c(295): error C2059: syntax error: '}'
-ext4_extent.c(338): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(339): error C4013: 'ext4_trans_set_block_dirty' undefined; assuming extern returning int
-ext4_extent.c(339): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(341): error C2037: left of 'dirty' specifies undefined struct/union 'ext4_inode_ref'
-ext4_extent.c(341): error C2065: 'true': undeclared identifier
-ext4_extent.c(343): error C2065: 'EOK': undeclared identifier
-ext4_extent.c(347): error C2146: syntax error: missing ')' before identifier 'keep_other'
-ext4_extent.c(347): error C2081: 'bool': name in formal parameter list illegal
-ext4_extent.c(347): error C2061: syntax error: identifier 'keep_other'
-ext4_extent.c(347): error C2059: syntax error: ';'
-ext4_extent.c(347): error C2059: syntax error: ')'
-ext4_extent.c(348): error C2449: found '{' at file scope (missing function header?)
-ext4_extent.c(367): error C2059: syntax error: '}'
-ext4_extent.c(419): error C2146: syntax error: missing ')' before identifier 'depth'
-ext4_extent.c(419): error C2081: 'int32_t': name in formal parameter list illegal
-ext4_extent.c(419): error C2061: syntax error: identifier 'depth'
-ext4_extent.c(419): error C2059: syntax error: ';'
-ext4_extent.c(419): error C2059: syntax error: ','
-ext4_extent.c(421): error C2059: syntax error: ')'
-ext4_extent.c(449): error C2037: left of 'header' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(452): error C4013: 'EXT_FIRST_INDEX' undefined; assuming extern returning int
-ext4_extent.c(452): warning C4047: '=': 'ext4_extent_index *' differs in levels of indirection from 'int'
-ext4_extent.c(453): error C4013: 'EXT_LAST_INDEX' undefined; assuming extern returning int
-ext4_extent.c(453): warning C4047: '=': 'ext4_extent_index *' differs in levels of indirection from 'int'
-ext4_extent.c(455): error C2036: 'ext4_extent_index *': unknown size
-ext4_extent.c(456): error C2037: left of 'first_block' specifies undefined struct/union 'ext4_extent_index'
-ext4_extent.c(457): error C2036: 'ext4_extent_index *': unknown size
-ext4_extent.c(459): error C2036: 'ext4_extent_index *': unknown size
-ext4_extent.c(462): error C2037: left of 'index' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(462): error C2036: 'ext4_extent_index *': unknown size
-ext4_extent.c(472): error C2037: left of 'header' specifies undefined struct/union 'ext4_extent_path'
-ext4_extent.c(475): error C2037: left of 'entries_count' specifies undefined struct/union 'ext4_extent_header'
-ext4_extent.c(475): fatal error C1003: error count exceeds 100; stopping compilation
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): error C2220: warning treated as error - no 'object' file generated
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): warning C4115: 'ext4_timespec': named type definition in parentheses
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(247): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(248): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): warning C4033: 'ext4_encode_extra_time' must return a value
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(254): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(269): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(272): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(947): warning C4161: #pragma pack(pop...): more pops than pushes
+ext4_extent.c(15): error C2079: 'block' uses undefined struct 'ext4_block'
+ext4_extent.c(16): error C2061: syntax error: identifier 'int32_t'
+ext4_extent.c(17): error C2061: syntax error: identifier 'maxdepth'
+ext4_extent.c(17): error C2059: syntax error: ';'
+ext4_extent.c(22): error C2059: syntax error: '}'
+ext4_extent.c(34): warning C4115: 'ext4_inode_ref': named type definition in parentheses
+ext4_extent.c(38): error C4013: 'ext4_balloc_alloc_block' undefined; assuming extern returning int
+ext4_extent.c(58): error C4013: 'ext4_balloc_free_blocks' undefined; assuming extern returning int
+ext4_extent.c(64): error C4013: 'ext4_sb_get_block_size' undefined; assuming extern returning int
+ext4_extent.c(64): error C2037: left of 'fs' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(67): warning C4267: '=': conversion from 'size_t' to '__u16', possible loss of data
+ext4_extent.c(78): error C2037: left of 'fs' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(81): error C2027: use of undefined type 'ext4_extent_index'
+  ext4_extent.c(19): note: see declaration of 'ext4_extent_index'
+ext4_extent.c(81): warning C4267: '=': conversion from 'size_t' to '__u16', possible loss of data
+ext4_extent.c(93): error C2037: left of 'inode' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(107): error C2037: left of 'inode' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(109): error C2027: use of undefined type 'ext4_extent_index'
+  ext4_extent.c(19): note: see declaration of 'ext4_extent_index'
+ext4_extent.c(122): error C2037: left of 'inode' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(122): error C2198: 'ext_depth': too few arguments for call
+ext4_extent.c(142): error C2037: left of 'depth' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(162): error C2037: left of 'extent' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(164): error C4013: 'ext4_ext_pblock' undefined; assuming extern returning int
+ext4_extent.c(165): error C4013: 'to_le32' undefined; assuming extern returning int
+ext4_extent.c(165): error C2039: 'first_block': is not a member of 'ext4_extent'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(739): note: see declaration of 'ext4_extent'
+ext4_extent.c(175): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(176): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(176): warning C4033: 'ext4_ext_find_goal' must return a value
+ext4_extent.c(180): error C4013: 'ext4_fs_inode_to_goal_block' undefined; assuming extern returning int
+ext4_extent.c(193): error C2039: 'first_block': is not a member of 'ext4_extent'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(739): note: see declaration of 'ext4_extent'
+ext4_extent.c(240): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(241): error C4013: 'ext4_trans_set_block_dirty' undefined; assuming extern returning int
+ext4_extent.c(241): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(243): error C2037: left of 'dirty' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(245): error C2065: 'EOK': undeclared identifier
+ext4_extent.c(251): error C2065: 'int32_t': undeclared identifier
+ext4_extent.c(251): error C2146: syntax error: missing ';' before identifier 'depth'
+ext4_extent.c(251): error C2065: 'depth': undeclared identifier
+ext4_extent.c(251): error C2065: 'i': undeclared identifier
+ext4_extent.c(256): error C2065: 'depth': undeclared identifier
+ext4_extent.c(258): error C2065: 'depth': undeclared identifier
+ext4_extent.c(258): error C2037: left of 'depth' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(260): error C2065: 'i': undeclared identifier
+ext4_extent.c(260): error C2065: 'depth': undeclared identifier
+ext4_extent.c(260): error C2036: 'ext4_extent_path *': unknown size
+ext4_extent.c(261): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(262): error C4013: 'ext4_bcache_test_flag' undefined; assuming extern returning int
+ext4_extent.c(262): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(262): error C2065: 'BC_DIRTY': undeclared identifier
+ext4_extent.c(264): error C2037: left of 'header' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(264): error C2198: 'ext4_extent_block_csum_set': too few arguments for call
+ext4_extent.c(266): error C4013: 'ext4_block_set' undefined; assuming extern returning int
+ext4_extent.c(266): error C2037: left of 'fs' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(266): error C2037: left of 'block' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(280): error C2037: left of 'fs' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(284): error C4013: 'to_le16' undefined; assuming extern returning int
+ext4_extent.c(284): error C2039: 'magic': is not a member of 'ext4_extent_header'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(760): note: see declaration of 'ext4_extent_header'
+ext4_extent.c(284): error C2065: 'EXT4_EXTENT_MAGIC': undeclared identifier
+ext4_extent.c(288): error C2039: 'depth': is not a member of 'ext4_extent_header'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(760): note: see declaration of 'ext4_extent_header'
+ext4_extent.c(292): error C2039: 'max_entries_count': is not a member of 'ext4_extent_header'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(760): note: see declaration of 'ext4_extent_header'
+ext4_extent.c(296): error C2039: 'entries_count': is not a member of 'ext4_extent_header'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(760): note: see declaration of 'ext4_extent_header'
+ext4_extent.c(296): error C2039: 'max_entries_count': is not a member of 'ext4_extent_header'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(760): note: see declaration of 'ext4_extent_header'
+ext4_extent.c(302): error C4013: 'ext4_sb_feature_ro_com' undefined; assuming extern returning int
+ext4_extent.c(302): error C2065: 'EXT4_FRO_COM_METADATA_CSUM': undeclared identifier
+ext4_extent.c(305): error C4013: 'ext4_dbg' undefined; assuming extern returning int
+ext4_extent.c(305): error C2065: 'DEBUG_EXTENT': undeclared identifier
+ext4_extent.c(306): error C2065: 'DBG_WARN': undeclared identifier
+ext4_extent.c(306): error C2143: syntax error: missing ')' before 'string'
+ext4_extent.c(308): error C2059: syntax error: ')'
+ext4_extent.c(312): error C2065: 'EOK': undeclared identifier
+ext4_extent.c(315): error C2065: 'DEBUG_EXTENT': undeclared identifier
+ext4_extent.c(316): error C2146: syntax error: missing ')' before identifier 'PRId64'
+ext4_extent.c(317): error C2059: syntax error: ')'
+ext4_extent.c(318): error C2065: 'EIO': undeclared identifier
+ext4_extent.c(322): error C2146: syntax error: missing ')' before identifier 'depth'
+ext4_extent.c(322): error C2081: 'int32_t': name in formal parameter list illegal
+ext4_extent.c(322): error C2061: syntax error: identifier 'depth'
+ext4_extent.c(322): error C2059: syntax error: ';'
+ext4_extent.c(322): error C2059: syntax error: ','
+ext4_extent.c(324): error C2059: syntax error: ')'
+ext4_extent.c(352): error C2037: left of 'header' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(355): warning C4133: '=': incompatible types - from 'ext4_extent_idx *' to 'ext4_extent_index *'
+ext4_extent.c(356): warning C4133: '=': incompatible types - from 'ext4_extent_idx *' to 'ext4_extent_index *'
+ext4_extent.c(358): error C2036: 'ext4_extent_index *': unknown size
+ext4_extent.c(359): error C2037: left of 'first_block' specifies undefined struct/union 'ext4_extent_index'
+ext4_extent.c(360): error C2036: 'ext4_extent_index *': unknown size
+ext4_extent.c(362): error C2036: 'ext4_extent_index *': unknown size
+ext4_extent.c(365): error C2037: left of 'index' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(365): error C2036: 'ext4_extent_index *': unknown size
+ext4_extent.c(375): error C2037: left of 'header' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(378): error C2039: 'entries_count': is not a member of 'ext4_extent_header'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(760): note: see declaration of 'ext4_extent_header'
+ext4_extent.c(391): error C2039: 'first_block': is not a member of 'ext4_extent'
+  c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(739): note: see declaration of 'ext4_extent'
+ext4_extent.c(397): error C2037: left of 'extent' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(404): error C2079: 'bh' uses undefined struct 'ext4_block'
+ext4_extent.c(404): error C4013: 'EXT4_BLOCK_ZERO' undefined; assuming extern returning int
+ext4_extent.c(407): error C2065: 'int32_t': undeclared identifier
+ext4_extent.c(407): error C2146: syntax error: missing ';' before identifier 'depth'
+ext4_extent.c(407): error C2065: 'depth': undeclared identifier
+ext4_extent.c(407): error C2065: 'ppos': undeclared identifier
+ext4_extent.c(408): error C2065: 'int32_t': undeclared identifier
+ext4_extent.c(408): error C2146: syntax error: missing ';' before identifier 'i'
+ext4_extent.c(408): error C2065: 'i': undeclared identifier
+ext4_extent.c(411): error C2037: left of 'inode' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(411): error C2198: 'ext_inode_hdr': too few arguments for call
+ext4_extent.c(412): error C2065: 'depth': undeclared identifier
+ext4_extent.c(412): error C2037: left of 'inode' specifies undefined struct/union 'ext4_inode_ref'
+ext4_extent.c(412): error C2198: 'ext_depth': too few arguments for call
+ext4_extent.c(416): error C2065: 'depth': undeclared identifier
+ext4_extent.c(416): error C2037: left of 'maxdepth' specifies undefined struct/union 'ext4_extent_path'
+ext4_extent.c(417): error C4013: 'free' undefined; assuming extern returning int
+ext4_extent.c(422): error C2065: 'int32_t': undeclared identifier
+ext4_extent.c(422): error C2146: syntax error: missing ';' before identifier 'path_depth'
+ext4_extent.c(422): error C2065: 'path_depth': undeclared identifier
+ext4_extent.c(422): error C2065: 'depth': undeclared identifier
+ext4_extent.c(424): error C4013: 'calloc' undefined; assuming extern returning int
+ext4_extent.c(424): error C2027: use of undefined type 'ext4_extent_path'
+  ext4_extent.c(13): note: see declaration of 'ext4_extent_path'
+ext4_extent.c(425): error C2065: 'path_depth': undeclared identifier
+ext4_extent.c(425): fatal error C1003: error count exceeds 100; stopping compilation
+  ext4_fsctrl.c
   ext4_init.c
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): error C2220: warning treated as error - no 'object' file generated
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): warning C4115: 'ext4_timespec': named type definition in parentheses
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(247): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(248): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): warning C4033: 'ext4_encode_extra_time' must return a value
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(254): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(269): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(272): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(947): warning C4161: #pragma pack(pop...): more pops than pushes
+  ext4_txn.c
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): error C2220: warning treated as error - no 'object' file generated
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(245): warning C4115: 'ext4_timespec': named type definition in parentheses
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(247): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(248): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(249): warning C4033: 'ext4_encode_extra_time' must return a value
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(254): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(269): error C2037: left of 'tv_sec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(272): error C2037: left of 'tv_nsec' specifies undefined struct/union 'ext4_timespec'
+c:\users\admin\documents\visual studio 2015\projects\ext4fsd\ext4fsd\include\ext4_fs.h(947): warning C4161: #pragma pack(pop...): more pops than pushes
+  jbd2.c
+  jbd2_recover.c
   Generating Code...

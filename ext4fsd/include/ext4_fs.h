@@ -242,14 +242,14 @@ struct ext4_inode {
  * affected filesystem before 2242.
  */
 
-static inline __le32 ext4_encode_extra_time(struct ext4_timespec *time)
+static inline __le32 ext4_encode_extra_time(struct drv_timespec *time)
 {
 	__u32 extra = sizeof(time->tv_sec) > 4 ?
 		((time->tv_sec - (__s32)time->tv_sec) >> 32) & EXT4_EPOCH_MASK : 0;
 	return cpu_to_le32(extra | (time->tv_nsec << EXT4_EPOCH_BITS));
 }
 
-static inline void ext4_decode_extra_time(struct ext4_timespec *time, __le32 extra)
+static inline void ext4_decode_extra_time(struct drv_timespec *time, __le32 extra)
 {
 	if (sizeof(time->tv_sec) > 4 &&
 		(extra & cpu_to_le32(EXT4_EPOCH_MASK))) {

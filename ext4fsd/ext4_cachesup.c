@@ -118,7 +118,9 @@ __bool ext4_cache_pin_write(
  */
 void ext4_cache_set_dirty(void *bcb, __u32 lsn)
 {
-	CcSetDirtyPinnedData(bcb, lsn);
+	LARGE_INTEGER lsn_ll;
+	lsn_ll.QuadPart = lsn;
+	CcSetDirtyPinnedData(bcb, &lsn_ll);
 }
 
 /**

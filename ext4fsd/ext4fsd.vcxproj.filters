@@ -29,9 +29,6 @@
     <Filter Include="Header Files\drv_common">
       <UniqueIdentifier>{d3595a12-7391-42e1-a669-a2a6a07ac592}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\ext4">
-      <UniqueIdentifier>{e128bdad-b7b1-48b0-a5d6-b85427148086}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -74,15 +71,6 @@
     <ClInclude Include="jbd2\jbd2.h">
       <Filter>Header Files\jbd2</Filter>
     </ClInclude>
-    <ClInclude Include="ext4_fs.h">
-      <Filter>Header Files\ext4</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ext4.h">
-      <Filter>Header Files\ext4</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ext4_data.h">
-      <Filter>Header Files\ext4</Filter>
-    </ClInclude>
     <ClInclude Include="include\drv_common\drv_atomic.h">
       <Filter>Header Files\drv_common</Filter>
     </ClInclude>
@@ -97,6 +85,18 @@
     </ClInclude>
     <ClInclude Include="include\drv_common\drv_types.h">
       <Filter>Header Files\drv_common</Filter>
+    </ClInclude>
+    <ClInclude Include="include\jbd2\jbd2_fs.h">
+      <Filter>Header Files\jbd2</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ext4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ext4_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ext4_fs.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
