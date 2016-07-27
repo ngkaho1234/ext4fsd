@@ -68,9 +68,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="jbd2\jbd2.h">
-      <Filter>Header Files\jbd2</Filter>
-    </ClInclude>
     <ClInclude Include="include\drv_common\drv_atomic.h">
       <Filter>Header Files\drv_common</Filter>
     </ClInclude>
@@ -97,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="ext4_fs.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\jbd2\jbd2.h">
+      <Filter>Header Files\jbd2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

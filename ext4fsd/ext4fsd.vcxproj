@@ -241,8 +241,8 @@
     <ClInclude Include="include\drv_common\drv_types.h" />
     <ClInclude Include="include\ext4.h" />
     <ClInclude Include="include\ext4_data.h" />
+    <ClInclude Include="include\jbd2\jbd2.h" />
     <ClInclude Include="include\jbd2\jbd2_fs.h" />
-    <ClInclude Include="jbd2\jbd2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
