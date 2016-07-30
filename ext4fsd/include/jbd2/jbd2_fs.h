@@ -81,16 +81,14 @@ struct commit_header {
  * raw struct shouldn't be used for pointer math or sizeof() - use
  * journal_tag_bytes(journal) instead to compute this.
  */
-typedef struct journal_block_tag3_s
-{
+typedef struct journal_block_tag3_s {
 	__be32		t_blocknr;			/* The on-disk block number */
 	__be32		t_flags;			/* See below */
 	__be32		t_blocknr_high;	/* most-significant high 32bits. */
 	__be32		t_checksum;		/* crc32c(uuid+seq+block) */
 } journal_block_tag3_t;
 
-typedef struct journal_block_tag_s
-{
+typedef struct journal_block_tag_s {
 	__be32		t_blocknr;			/* The on-disk block number */
 	__be16		t_checksum;		/* truncated crc32c(uuid+seq+block) */
 	__be16		t_flags;			/* See below */
@@ -110,8 +108,7 @@ struct jbd2_journal_block_tail {
  * used on disk to describe a series of blocks to
  * be revoked from the log
  */
-typedef struct jbd2_journal_revoke_header_s
-{
+typedef struct jbd2_journal_revoke_header_s {
 	journal_header_t	r_header;
 	__be32			r_count;	/* Count of bytes used in the block */
 } jbd2_journal_revoke_header_t;
@@ -127,8 +124,7 @@ typedef struct jbd2_journal_revoke_header_s
  *
  * All fields are in big-endian byte order.
  */
-typedef struct journal_superblock_s
-{
+typedef struct journal_superblock_s {
 	/* 0x0000 */
 	journal_header_t	s_header;
 
@@ -152,7 +148,7 @@ typedef struct journal_superblock_s
 	__be32	s_feature_incompat;	/* incompatible feature set */
 	__be32	s_feature_ro_compat;	/* readonly-compatible feature set */
 	/* 0x0030 */
-	__u8	s_uuid[16];				/* 128-bit uuid for journal */
+	__u8		s_uuid[16];				/* 128-bit uuid for journal */
 
 	/* 0x0040 */
 	__be32	s_nr_users;			/* Nr of filesystems sharing log */
@@ -170,7 +166,7 @@ typedef struct journal_superblock_s
 	__be32	s_checksum;			/* crc32c(superblock) */
 
 	/* 0x0100 */
-	__u8	s_users[16 * 48];			/* ids of all fs'es sharing the log */
+	__u8		s_users[16 * 48];			/* ids of all fs'es sharing the log */
 	/* 0x0400 */
 } journal_superblock_t;
 
@@ -193,60 +189,60 @@ typedef struct journal_superblock_s
 					JBD2_FEATURE_INCOMPAT_CSUM_V2 | \
 					JBD2_FEATURE_INCOMPAT_CSUM_V3)
 
-#if 0
+#if 1
 
 /* journal feature predicate functions */
 #define JBD2_FEATURE_COMPAT_FUNCS(name, flagname) \
-static inline __bool jbd2_has_feature_##name(journal_t *j) \
+static inline __bool jbd2_has_feature_##name(journal_superblock_t *sb) \
 { \
-	return ((j)->j_format_version >= 2 && \
-		((j)->j_superblock->s_feature_compat & \
+	return (be32_to_cpu((sb)->s_header.h_blocktype) >= 2 && \
+		((sb)->s_feature_compat & \
 		 cpu_to_be32(JBD2_FEATURE_COMPAT_##flagname)) != 0); \
 } \
-static inline void jbd2_set_feature_##name(journal_t *j) \
+static inline void jbd2_set_feature_##name(journal_superblock_t *sb) \
 { \
-	(j)->j_superblock->s_feature_compat |= \
+	(sb)->s_feature_compat |= \
 		cpu_to_be32(JBD2_FEATURE_COMPAT_##flagname); \
 } \
-static inline void jbd2_clear_feature_##name(journal_t *j) \
+static inline void jbd2_clear_feature_##name(journal_superblock_t *sb) \
 { \
-	(j)->j_superblock->s_feature_compat &= \
+	(sb)->s_feature_compat &= \
 		~cpu_to_be32(JBD2_FEATURE_COMPAT_##flagname); \
 }
 
 #define JBD2_FEATURE_RO_COMPAT_FUNCS(name, flagname) \
-static inline __bool jbd2_has_feature_##name(journal_t *j) \
+static inline __bool jbd2_has_feature_##name(journal_t *sb) \
 { \
-	return ((j)->j_format_version >= 2 && \
-		((j)->j_superblock->s_feature_ro_compat & \
+	return (be32_to_cpu((sb)->s_header.h_blocktype) >= 2 && \
+		((sb)->s_feature_ro_compat & \
 		 cpu_to_be32(JBD2_FEATURE_RO_COMPAT_##flagname)) != 0); \
 } \
-static inline void jbd2_set_feature_##name(journal_t *j) \
+static inline void jbd2_set_feature_##name(journal_superblock_t *sb) \
 { \
-	(j)->j_superblock->s_feature_ro_compat |= \
+	(sb)->s_feature_ro_compat |= \
 		cpu_to_be32(JBD2_FEATURE_RO_COMPAT_##flagname); \
 } \
-static inline void jbd2_clear_feature_##name(journal_t *j) \
+static inline void jbd2_clear_feature_##name(journal_superblock_t *sb) \
 { \
-	(j)->j_superblock->s_feature_ro_compat &= \
+	(sb)->s_feature_ro_compat &= \
 		~cpu_to_be32(JBD2_FEATURE_RO_COMPAT_##flagname); \
 }
 
 #define JBD2_FEATURE_INCOMPAT_FUNCS(name, flagname) \
-static inline __bool jbd2_has_feature_##name(journal_t *j) \
+static inline __bool jbd2_has_feature_##name(journal_superblock_t *sb) \
 { \
-	return ((j)->j_format_version >= 2 && \
-		((j)->j_superblock->s_feature_incompat & \
+	return (be32_to_cpu((sb)->s_header.h_blocktype) >= 2 && \
+		((sb)->s_feature_incompat & \
 		 cpu_to_be32(JBD2_FEATURE_INCOMPAT_##flagname)) != 0); \
 } \
-static inline void jbd2_set_feature_##name(journal_t *j) \
+static inline void jbd2_set_feature_##name(journal_superblock_t *sb) \
 { \
-	(j)->j_superblock->s_feature_incompat |= \
+	(sb)->s_feature_incompat |= \
 		cpu_to_be32(JBD2_FEATURE_INCOMPAT_##flagname); \
 } \
-static inline void jbd2_clear_feature_##name(journal_t *j) \
+static inline void jbd2_clear_feature_##name(journal_superblock_t *sb) \
 { \
-	(j)->j_superblock->s_feature_incompat &= \
+	(sb)->s_feature_incompat &= \
 		~cpu_to_be32(JBD2_FEATURE_INCOMPAT_##flagname); \
 }
 
