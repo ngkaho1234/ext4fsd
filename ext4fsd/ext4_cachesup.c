@@ -146,5 +146,5 @@ void ext4_cache_unpin_repinned_bcb(void *bcb)
 {
 	IO_STATUS_BLOCK io_status;
 	CcUnpinRepinnedBcb(bcb, FALSE, &io_status);
-	NT_ASSERT(NT_SUCCESS(io_status.Status));
+	NT_ASSERT(NT_SUCCESS(io_status.Information));
 }

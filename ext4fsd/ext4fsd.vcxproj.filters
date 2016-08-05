@@ -98,5 +98,8 @@
     <ClInclude Include="include\jbd2\jbd2.h">
       <Filter>Header Files\jbd2</Filter>
     </ClInclude>
+    <ClInclude Include="include\helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

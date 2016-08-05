@@ -4,10 +4,7 @@
 
 #pragma once
 
-#include <ntifs.h>
-
-#include "drv_common\drv_types.h"
-#include "drv_common\drv_atomic.h"
+#include "helper.h"
 
 typedef __u64				ext4_fsblk_t;
 typedef __u32				ext4_lblk_t;

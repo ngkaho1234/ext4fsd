@@ -4,16 +4,79 @@
 
 #pragma once
 
-#include <ntifs.h>
-
-#include "drv_common\drv_types.h"
-#include "drv_common\drv_lock.h"
+#include "helper.h"
 
 #include "jbd2_fs.h"
+
+/*
+ * Definitions of standard types used by jbd2
+ */
+typedef __u32	jbd_fsblk_t;
+typedef __u32	jbd_tid_t;
+
+/**
+ * @brief	State of transaction
+ */
+enum jbd2_txn_state {
+	TXN_APPENDING,
+	TXN_RUNNING,
+	TXN_LOCKED,
+	TXN_COMMITTING,
+	TXN_CHECKPOINT,
+};
+
+struct jbd2_txn;
+struct jbd2_handle;
+
+/**
+ * @brief Logged BCB
+ */
+typedef struct jbd2_lbcb {
+	void *			jl_bcb;		/* The bcb to be logged */
+	void *			jl_data;		/* Data field of bcb logged */
+
+	struct jbd2_txn *	jl_txn;		/* The transaction this LBCB belongs to */
+	LIST_ENTRY		jl_list_node;	/* List node */
+} jbd2_lbcb_t;
+
+/**
+ * @brief JBD2 transaction handle
+ */
+typedef struct jbd2_txn {
+	jbd_tid_t				jt_tid;			/* Transaction ID */
+	jbd_fsblk_t			jt_start_blk;		/* Start of log block */
+	jbd_fsblk_t			jt_reserved_cnt;	/* Reserved block count of this transaction */
+
+	enum jbd2_txn_state	jt_state;			/* State of transaction */
+	drv_mutex_t			jt_lock;			/* Lock of the transaction */
+
+	LIST_ENTRY			jt_lbcb_list;		/* List of LBCB held by this transaction */
+
+	struct jbd2_handle *	jt_handle;			/* The log handle this transaction belongs to */
+	LIST_ENTRY			jt_list_node;		/* List node */
+} jbd2_txn_t;
 
 /**
 * @brief JBD2 log handle
 */
-struct jbd2_handle {
-	PFILE_OBJECT	jbd2_logfile;	/* Log file handle */
-};
+typedef struct jbd2_handle {
+	PFILE_OBJECT			jh_logfile;			/* Log file handle */
+
+	drv_mutex_t			jh_lock;			/* Lock of the handle */
+	KEVENT				jh_event;			/* Wait on the KEVENT till operation is finished */
+
+	__u32				jh_blocksize;		/* Block size of log file */
+	__u32				jh_blockcnt;		/* Size of of log file in blocks */
+	__u8					jh_uuid[16];		/* UUID of journal */
+	__u32				jh_max_txn;		/* Limit of journal blocks per trans */
+
+	jbd2_txn_t *			jh_running_txn;	/* Current running transaction */
+	LIST_ENTRY			jh_cp_txn_queue;	/* A queue of transaction in checkpoint */
+
+	journal_superblock_t *	jh_sb;			/* Superblock buffer */
+
+	void (*after_commit)(					/* After commit callback */
+			struct jbd2_handle *handle,
+			jbd2_txn_t *txn
+		);
+} jbd2_handle_t;

@@ -1,4 +1,0 @@
-﻿  Building 'ext4fsd' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
-  Stamping Debug\ext4fsd.inf [Version] section with DriverVer=07/21/2016,8.2.4.486
-  cl wpp
-wpp : error : (WppCreateFile)Cannot open file trace.h, error 2

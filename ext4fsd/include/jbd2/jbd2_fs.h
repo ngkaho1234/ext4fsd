@@ -148,7 +148,7 @@ typedef struct journal_superblock_s {
 	__be32	s_feature_incompat;	/* incompatible feature set */
 	__be32	s_feature_ro_compat;	/* readonly-compatible feature set */
 	/* 0x0030 */
-	__u8		s_uuid[16];				/* 128-bit uuid for journal */
+	__u8		s_uuid[16];			/* 128-bit uuid for journal */
 
 	/* 0x0040 */
 	__be32	s_nr_users;			/* Nr of filesystems sharing log */
