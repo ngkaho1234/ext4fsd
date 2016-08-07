@@ -32,11 +32,16 @@ struct jbd2_handle;
  * @brief Logged BCB
  */
 typedef struct jbd2_lbcb {
-	void *			jl_bcb;		/* The bcb to be logged */
-	void *			jl_data;		/* Data field of bcb logged */
+	void *			jl_bcb;			/* The bcb to be logged */
+	void *			jl_data;			/* Data field of bcb logged */
 
-	struct jbd2_txn *	jl_txn;		/* The transaction this LBCB belongs to */
-	LIST_ENTRY		jl_list_node;	/* List node */
+	struct jbd2_txn *	jl_txn;			/* The transaction this LBCB belongs to */
+
+	LIST_ENTRY		jl_txn_list_node;	/* Chain node of lbcb within a transaction */
+	LIST_ENTRY		jl_txn_queue_node;	/*
+									 * Queue node of lbcb pointing to same
+									 * filesystem block
+									 */
 } jbd2_lbcb_t;
 
 /**
@@ -61,6 +66,7 @@ typedef struct jbd2_txn {
 	jbd2_tid_t				jt_tid;			/* Transaction ID */
 	jbd2_logblk_t			jt_start_blk;		/* Start of log block */
 	jbd2_logblk_t			jt_reserved_cnt;	/* Reserved block count of this transaction */
+	jbd2_logblk_t			jt_logged_cnt;		/* Logged block count of this transaction */
 
 	enum jbd2_txn_state	jt_state;			/* State of transaction */
 	drv_mutex_t			jt_lock;			/* Lock of the transaction */
@@ -86,10 +92,11 @@ typedef struct jbd2_handle {
 	__u32				jh_max_txn;		/* Limit of journal blocks per trans */
 
 	jbd2_txn_t *			jh_running_txn;	/* Current running transaction */
-	LIST_ENTRY			jh_cp_txn_queue;	/* A queue of transaction in checkpoint */
+	LIST_ENTRY			jh_txn_queue;		/* A queue of transaction committed */
 
 	journal_superblock_t *	jh_sb;			/* Superblock buffer */
 
+	RTL_AVL_TABLE		jh_block_table;		/* Block table logged by JBD2 */
 	RTL_AVL_TABLE		jh_revoke_table;	/* Revoke table */
 
 	void (*after_commit)(					/* After commit callback */
