@@ -237,7 +237,6 @@
     <ClInclude Include="include\drv_common\drv_atomic.h" />
     <ClInclude Include="include\drv_common\drv_endian.h" />
     <ClInclude Include="include\drv_common\drv_lock.h" />
-    <ClInclude Include="include\drv_common\drv_rbtree.h" />
     <ClInclude Include="include\drv_common\drv_types.h" />
     <ClInclude Include="include\ext4.h" />
     <ClInclude Include="include\ext4_data.h" />

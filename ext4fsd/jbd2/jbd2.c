@@ -18,13 +18,14 @@ NTSTATUS jbd2_open_handle(
 	if (!handle)
 		return STATUS_INSUFFICIENT_RESOURCES;
 
+	
 	*handle_ret = handle;
 	return STATUS_SUCCESS;
 }
 
 void jbd2_flush_to_lsn(
 		jbd2_handle_t *handle,
-		jbd_tid_t lsn,
+		jbd2_tid_t lsn,
 		KEVENT *event,
 		NTSTATUS *status)
 {

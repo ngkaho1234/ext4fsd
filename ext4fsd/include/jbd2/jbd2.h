@@ -5,14 +5,16 @@
 #pragma once
 
 #include "helper.h"
+#include "drv_common\drv_rbtree.h"
 
 #include "jbd2_fs.h"
 
 /*
  * Definitions of standard types used by jbd2
  */
-typedef __u32	jbd_fsblk_t;
-typedef __u32	jbd_tid_t;
+typedef __u32	jbd2_logblk_t;
+typedef __u64	jbd2_fsblk_t;
+typedef __u32	jbd2_tid_t;
 
 /**
  * @brief	State of transaction
@@ -39,12 +41,27 @@ typedef struct jbd2_lbcb {
 } jbd2_lbcb_t;
 
 /**
+ * @brief  Revoke entry
+ */
+typedef struct jbd2_revoke_entry {
+	jbd2_fsblk_t	re_block;	/* Block number not to be replayed */
+	jbd2_tid_t		re_tid;	/*
+						 * For any transaction id smaller
+						 * than trans_id, records of @block
+						 * in those transactions should not
+						 * be replayed
+						 */
+} jbd2_revoke_entry_t;
+
+#define JBD2_RECOVER_POOL_TAG 'ER2J'
+
+/**
  * @brief JBD2 transaction handle
  */
 typedef struct jbd2_txn {
-	jbd_tid_t				jt_tid;			/* Transaction ID */
-	jbd_fsblk_t			jt_start_blk;		/* Start of log block */
-	jbd_fsblk_t			jt_reserved_cnt;	/* Reserved block count of this transaction */
+	jbd2_tid_t				jt_tid;			/* Transaction ID */
+	jbd2_logblk_t			jt_start_blk;		/* Start of log block */
+	jbd2_logblk_t			jt_reserved_cnt;	/* Reserved block count of this transaction */
 
 	enum jbd2_txn_state	jt_state;			/* State of transaction */
 	drv_mutex_t			jt_lock;			/* Lock of the transaction */
@@ -73,6 +90,8 @@ typedef struct jbd2_handle {
 	LIST_ENTRY			jh_cp_txn_queue;	/* A queue of transaction in checkpoint */
 
 	journal_superblock_t *	jh_sb;			/* Superblock buffer */
+
+	RTL_AVL_TABLE		jh_revoke_table;	/* Revoke table */
 
 	void (*after_commit)(					/* After commit callback */
 			struct jbd2_handle *handle,

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#pragma push(push, 1)
+#pragma pack(push, 1)
 
 /*
  * Max physical block we can address w/o extents

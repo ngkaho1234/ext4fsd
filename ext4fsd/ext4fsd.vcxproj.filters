@@ -77,9 +77,6 @@
     <ClInclude Include="include\drv_common\drv_lock.h">
       <Filter>Header Files\drv_common</Filter>
     </ClInclude>
-    <ClInclude Include="include\drv_common\drv_rbtree.h">
-      <Filter>Header Files\drv_common</Filter>
-    </ClInclude>
     <ClInclude Include="include\drv_common\drv_types.h">
       <Filter>Header Files\drv_common</Filter>
     </ClInclude>
