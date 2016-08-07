@@ -18,7 +18,6 @@ typedef __u32	jbd_tid_t;
  * @brief	State of transaction
  */
 enum jbd2_txn_state {
-	TXN_APPENDING,
 	TXN_RUNNING,
 	TXN_LOCKED,
 	TXN_COMMITTING,
@@ -80,3 +79,5 @@ typedef struct jbd2_handle {
 			jbd2_txn_t *txn
 		);
 } jbd2_handle_t;
+
+#define JBD2_POOL_TAG '2BDJ'
