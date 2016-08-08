@@ -23,15 +23,6 @@ NTSTATUS jbd2_open_handle(
 	return STATUS_SUCCESS;
 }
 
-void jbd2_flush_to_lsn(
-		jbd2_handle_t *handle,
-		jbd2_tid_t lsn,
-		KEVENT *event,
-		NTSTATUS *status)
-{
-
-}
-
 void jbd2_flush(
 		jbd2_handle_t *handle,
 		KEVENT *event,
