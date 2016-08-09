@@ -78,8 +78,8 @@ typedef struct jbd2_txn {
 } jbd2_txn_t;
 
 /**
-* @brief JBD2 log handle
-*/
+ * @brief JBD2 log handle
+ */
 typedef struct jbd2_handle {
 	PFILE_OBJECT			jh_logfile;			/* Log file handle */
 
