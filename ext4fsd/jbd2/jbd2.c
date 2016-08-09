@@ -92,9 +92,8 @@ NTSTATUS jbd2_open_handle(
 					PIN_WAIT,
 					&bcb,
 					&sb_buf);
-		if (!cc_ret) {
+		if (!cc_ret)
 			__leave;
-		}
 
 		/* Verify whether the information in superblock is correct */
 
