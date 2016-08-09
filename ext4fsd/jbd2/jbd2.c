@@ -109,6 +109,15 @@ jbd2_revoke_entry_free(
 
 RB_GENERATE(jbd2_generic_table, jbd2_node_hdr, th_node, jbd2_generic_table_cmp);
 
+/**
+ * @brief	Get and reference an LBCB from LBCB table which represents
+ *		given @p blocknr. 
+ *		If the LBCB doesn't exist, an LBCB will be allocated an inserted into
+ *		the LBCB table, and its jl_is_new flag will be set to TRUE.
+ * @param handle	Handle to journal file
+ * @param blocknr	Block number
+ * @return an LBCB
+ */
 static jbd2_lbcb_t *
 jbc2_lbcb_get(
 	jbd2_handle_t *handle,
@@ -138,6 +147,11 @@ jbc2_lbcb_get(
 	return lbcb_ret;
 }
 
+/**
+ * @brief	Dereference an LBCB
+ * @param handle	Handle to journal file
+ * @param lbcb	The LBCB caller got from jbc2_lbcb_get()
+ */
 static void
 jbd2_lbcb_put(
 	jbd2_handle_t *handle,
@@ -153,6 +167,15 @@ jbd2_lbcb_put(
 	}
 }
 
+/**
+ * @brief	Get and reference revoke entry from revoke entry table which
+ *		represents given @p blocknr.
+ *		If the LBCB doesn't exist, an LBCB will be allocated an inserted into
+ *		the LBCB table, and its jl_is_new flag will be set to TRUE.
+ * @param handle	Handle to journal file
+ * @param blocknr	Block number
+ * @return an LBCB
+ */
 static jbd2_revoke_entry_t *
 jbc2_revoke_entry_get(
 	jbd2_handle_t *handle,
@@ -182,6 +205,11 @@ jbc2_revoke_entry_get(
 	return re_ret;
 }
 
+/**
+ * @brief	Dereference a revoke entry
+ * @param handle	Handle to journal file
+ * @param lbcb	The revoke entry caller got from jbc2_revoke_entry_get()
+ */
 static void
 jbd2_revoke_entry_put(
 	jbd2_handle_t *handle,
