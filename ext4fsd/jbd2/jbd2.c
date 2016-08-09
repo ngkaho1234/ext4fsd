@@ -15,7 +15,7 @@ CACHE_MANAGER_CALLBACKS jbd2_cc_manager_callbacks;
  * @param a		A pointer to the first item to be compared
  * @param b		A pointer to the second item to be compared
  * @return	GenericLessThan if index of @p a < index of @p b,
-*			GenericGreaterThan if index of @p a > index of @p b,
+ *			GenericGreaterThan if index of @p a > index of @p b,
  *			or GenericEqual if index of @p a == index of @p b.
  */
 static RTL_GENERIC_COMPARE_RESULTS
