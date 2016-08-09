@@ -77,6 +77,7 @@ DRIVER_INITIALIZE DriverEntry;
 /*
  * ext4_cachesup.c
  */
+
 void ext4_cache_init_map(
 	PFILE_OBJECT file_object,
 	PCC_FILE_SIZES file_size,
