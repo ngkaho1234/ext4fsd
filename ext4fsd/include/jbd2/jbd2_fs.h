@@ -62,9 +62,7 @@ typedef struct journal_header_s
  * Checksum v1, v2, and v3 are mutually exclusive features.
  */
 struct commit_header {
-	__be32			h_magic;
-	__be32			h_blocktype;
-	__be32			h_sequence;
+	journal_header_t	h_header;
 	__u8				h_chksum_type;
 	__u8				h_chksum_size;
 	__u8				h_padding[2];
