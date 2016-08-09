@@ -37,9 +37,16 @@ typedef struct jbd2_lbcb {
 	void *			jl_data;			/* Data field of bcb logged */
 
 	struct jbd2_txn *	jl_txn;			/* The transaction this LBCB belongs to */
-	jbd2_tid_t			jl_prev_txn_tid;		/* The previous tid of transaction this LBCB belonged to */
+	struct jbd2_txn *	jl_cp_txn;			/*
+									 * The the most recent transaction on checkpoint
+									 * queue this LBCB belonged to 
+									 */
 
 	LIST_ENTRY		jl_txn_list_node;	/* Chain node of lbcb within a transaction */
+	LIST_ENTRY		jl_cp_txn_list_node;	/*
+									 * Chain node of lbcb within the most recent
+									 * transaction on checkpoint
+									 */
 } jbd2_lbcb_t;
 
 /**
