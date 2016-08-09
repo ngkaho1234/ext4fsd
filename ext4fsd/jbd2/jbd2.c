@@ -144,6 +144,16 @@ void jbd2_init()
 }
 
 /**
+ * @brief Replay a journal file
+ * @param handle Handle to journal file
+ * @return	STATUS_SUCCESS
+ */
+NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
+{
+
+}
+
+/**
  * @brief Open a journal file (we won't append the file of course...)
  * @param log_file		FILE_OBJECT of journal file
  * @param log_size		Size of journal file in bytes

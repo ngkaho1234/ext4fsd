@@ -60,9 +60,6 @@
     <ClCompile Include="ext4_fsctrl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="jbd2\jbd2_recover.c">
-      <Filter>Source Files\jbd2</Filter>
-    </ClCompile>
     <ClCompile Include="jbd2\jbd2.c">
       <Filter>Source Files\jbd2</Filter>
     </ClCompile>

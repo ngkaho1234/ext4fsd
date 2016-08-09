@@ -84,7 +84,7 @@ typedef struct jbd2_revoke_entry {
 } jbd2_revoke_entry_t;
 
 /**
- * @brief JBD2 transaction handle
+ * @brief JBD2 transaction unit
  */
 typedef struct jbd2_txn {
 	jbd2_tid_t				jt_tid;			/* Transaction ID */
@@ -101,6 +101,15 @@ typedef struct jbd2_txn {
 	struct jbd2_handle *	jt_handle;			/* The log handle this transaction belongs to */
 	LIST_ENTRY			jt_list_node;		/* List node */
 } jbd2_txn_t;
+
+/**
+ * @brief Handle to JBD2 transaction handle
+ */
+typedef struct jbd2_txn_handle {
+	__u8				th_uuid[UUID_SIZE];	/* UUID of the client */
+	jbd2_logblk_t		th_reserved_cnt;		/* Reserved block count of this transaction handle */
+	jbd2_txn_t *		th_txn;				/* Transaction unit */
+} jbd2_txn_handle_t;
 
 /**
  * @brief JBD2 log handle

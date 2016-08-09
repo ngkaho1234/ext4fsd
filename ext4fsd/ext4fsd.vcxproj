@@ -47,7 +47,6 @@
     <ClCompile Include="ext4_txn.c" />
     <ClCompile Include="jbd2\jbd2.c" />
     <ClCompile Include="jbd2\jbd2_cachesup.c" />
-    <ClCompile Include="jbd2\jbd2_recover.c" />
   </ItemGroup>
   <ItemGroup>
     <Inf Include="ext4fsd.inf" />
