@@ -834,7 +834,7 @@ static inline unsigned short ext_depth(struct ext4_inode *inode)
 static inline void ext4_ext_mark_unwritten(struct ext4_extent *ext)
 {
 	/* We can not have an unwritten extent of zero length! */
-	ASSERT(!((le16_to_cpu(ext->ee_len) & ~EXT_INIT_MAX_LEN) == 0));
+	NT_ASSERT(!((le16_to_cpu(ext->ee_len) & ~EXT_INIT_MAX_LEN) == 0));
 	ext->ee_len |= cpu_to_le16(EXT_INIT_MAX_LEN);
 }
 

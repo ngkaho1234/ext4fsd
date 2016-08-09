@@ -66,6 +66,9 @@
     <ClCompile Include="jbd2\jbd2.c">
       <Filter>Source Files\jbd2</Filter>
     </ClCompile>
+    <ClCompile Include="jbd2\jbd2_cachesup.c">
+      <Filter>Source Files\jbd2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\drv_common\drv_atomic.h">

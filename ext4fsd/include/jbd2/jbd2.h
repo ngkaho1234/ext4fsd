@@ -57,8 +57,6 @@ typedef struct jbd2_revoke_entry {
 						 */
 } jbd2_revoke_entry_t;
 
-#define JBD2_RECOVER_POOL_TAG 'ER2J'
-
 /**
  * @brief JBD2 transaction handle
  */
@@ -81,7 +79,7 @@ typedef struct jbd2_txn {
  * @brief JBD2 log handle
  */
 typedef struct jbd2_handle {
-	PFILE_OBJECT			jh_logfile;			/* Log file handle */
+	PFILE_OBJECT			jh_log_file;		/* Log file handle */
 
 	drv_mutex_t			jh_lock;			/* Lock of the handle */
 	KEVENT				jh_event;			/* Wait on the KEVENT till operation is finished */
@@ -106,3 +104,25 @@ typedef struct jbd2_handle {
 } jbd2_handle_t;
 
 #define JBD2_POOL_TAG '2BDJ'
+#define JBD2_SUPERBLOCK_TAG 'BS2J'
+#define JBD2_RECOVER_POOL_TAG 'ER2J'
+
+/* jbd2_cachesup.c */
+
+__bool jbd2_cc_acquire_for_lazywrite(
+		void *context,
+		__bool wait
+);
+
+void jbd2_cc_release_from_lazywrite(
+		void *context
+);
+
+__bool jbd2_cc_acquire_for_readahead(
+		void *context,
+		__bool wait
+);
+
+void jbd2_cc_release_from_readahead(
+		void *context
+);
