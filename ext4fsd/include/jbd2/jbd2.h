@@ -32,16 +32,14 @@ struct jbd2_handle;
  * @brief Logged BCB
  */
 typedef struct jbd2_lbcb {
+	jbd2_fsblk_t		jl_block;			/* Block nr. of this lbcb pointing to */
 	void *			jl_bcb;			/* The bcb to be logged */
 	void *			jl_data;			/* Data field of bcb logged */
 
 	struct jbd2_txn *	jl_txn;			/* The transaction this LBCB belongs to */
+	jbd2_tid_t			jl_prev_txn_tid;		/* The previous tid of transaction this LBCB belonged to */
 
 	LIST_ENTRY		jl_txn_list_node;	/* Chain node of lbcb within a transaction */
-	LIST_ENTRY		jl_txn_queue_node;	/*
-									 * Queue node of lbcb pointing to same
-									 * filesystem block
-									 */
 } jbd2_lbcb_t;
 
 /**
@@ -64,12 +62,13 @@ typedef struct jbd2_txn {
 	jbd2_tid_t				jt_tid;			/* Transaction ID */
 	jbd2_logblk_t			jt_start_blk;		/* Start of log block */
 	jbd2_logblk_t			jt_reserved_cnt;	/* Reserved block count of this transaction */
-	jbd2_logblk_t			jt_logged_cnt;		/* Logged block count of this transaction */
+	drv_atomic_t			jt_logged_cnt;		/* Logged block count of this transaction */
 
 	enum jbd2_txn_state	jt_state;			/* State of transaction */
 	drv_mutex_t			jt_lock;			/* Lock of the transaction */
 
 	LIST_ENTRY			jt_lbcb_list;		/* List of LBCB held by this transaction */
+	drv_atomic_t			jt_unwritten_cnt;	/* Unwritten block count of this transaction */
 
 	struct jbd2_handle *	jt_handle;			/* The log handle this transaction belongs to */
 	LIST_ENTRY			jt_list_node;		/* List node */
