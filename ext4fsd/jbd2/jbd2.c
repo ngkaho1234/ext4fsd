@@ -11,119 +11,104 @@ CACHE_MANAGER_CALLBACKS jbd2_cc_manager_callbacks;
 
 /**
  * @brief Node comparsion routine for all table
- * @param table	A pointer to the generic table
  * @param a		A pointer to the first item to be compared
  * @param b		A pointer to the second item to be compared
- * @return	GenericLessThan if index of @p a < index of @p b,
- *			GenericGreaterThan if index of @p a > index of @p b,
- *			or GenericEqual if index of @p a == index of @p b.
+ * @return	-1 if index of @p a < index of @p b,
+ *			1 if index of @p a > index of @p b,
+ *			or 0 if index of @p a == index of @p b.
  */
-static RTL_GENERIC_COMPARE_RESULTS
-jbd2_generic_compare(
-	struct _RTL_GENERIC_TABLE  *table,
-	PVOID  a,
-	PVOID  b
+static int
+jbd2_generic_table_cmp(
+	struct jbd2_node_hdr *hdr_a,
+	struct jbd2_node_hdr *hdr_b
 )
 {
-	struct jbd2_node_hdr *hdr_a, *hdr_b;
-	hdr_a = (struct jbd2_node_hdr *)a;
-	hdr_b = (struct jbd2_node_hdr *)b;
-
 	if (hdr_a->th_block < hdr_b->th_block)
-		return GenericLessThan;
+		return -1;
 	if (hdr_a->th_block > hdr_b->th_block)
-		return GenericGreaterThan;
-	return GenericEqual;
+		return 1;
+	return 0;
 }
 
 /**
  * @brief	Allocate memory for caller-supplied data plus some 
  *		additional memory for use by the lbcb table entry
- * @param table		A pointer to the generic table
- * @param byte_size	The number of bytes to allocate
+ * @param handle Handle to journal file
  * @return Allocated buffer address
  */
-static PVOID
-jbd2_lbcb_table_alloc(
-	struct _RTL_GENERIC_TABLE  *table,
-	CLONG  byte_size
-)
+static jbd2_lbcb_t *
+jbd2_lbcb_alloc(jbd2_handle_t *handle)
 {
-	return ExAllocatePoolWithTag(
-				NonPagedPool,
-				byte_size,
-				JBD2_LBCB_TABLE_TAG);
+	return ExAllocateFromNPagedLookasideList(
+				&handle->jh_lbcb_cache);
 }
 
 /**
- * @brief Deallocate memory for elements to be deleted from the lbcb table
- * @param table	A pointer to the generic table
- * @param buf		A pointer to the element that is being deleted
+ * @brief Deallocate memory for a lbcb
+ * @param handle	Handle to journal file
+ * @param lbcb	A pointer to the lbcb that is being deallocated
  */
 static void
-jbd2_lbcb_table_free(
-	struct _RTL_GENERIC_TABLE  *table,
-	PVOID buf
+jbd2_lbcb_free(
+	jbd2_handle_t *handle,
+	jbd2_lbcb_t *lbcb
 )
 {
-	ExFreePoolWithTag(buf, JBD2_LBCB_TABLE_TAG);
+	ExFreeToNPagedLookasideList(&handle->jh_lbcb_cache, lbcb);
 }
 
 /**
  * @brief	Allocate memory for caller-supplied data plus some
  *		additional memory for use by the revoke table entry
- * @param table		A pointer to the generic table
- * @param byte_size	The number of bytes to allocate
+ * @param handle Handle to journal file
  * @return Allocated buffer address
  */
-static PVOID
-jbd2_revoke_table_alloc(
-	struct _RTL_GENERIC_TABLE  *table,
-	CLONG  byte_size
-)
+static jbd2_revoke_entry_t *
+jbd2_revoke_entry_alloc(jbd2_handle_t *handle)
 {
-	return ExAllocatePoolWithTag(
-				NonPagedPool,
-				byte_size,
-				JBD2_REVOKE_TABLE_TAG);
+	return ExAllocateFromNPagedLookasideList(
+				&handle->jh_revoke_cache);
 }
 
 /**
- * @brief Deallocate memory for elements to be deleted from the revoke table
- * @param table	A pointer to the generic table
- * @param buf		A pointer to the element that is being deleted
+ * @brief Deallocate memory for elements to be deleted
+ * @param handle	Handle to journal file
+ * @param re		A pointer to the revoke entry that is being deallocated
  */
 static void
-jbd2_revoke_table_free(
-	struct _RTL_GENERIC_TABLE  *table,
-	PVOID buf
+jbd2_revoke_entry_free(
+	jbd2_handle_t *handle,
+	jbd2_revoke_entry_t *re
 )
 {
-	ExFreePoolWithTag(buf, JBD2_REVOKE_TABLE_TAG);
+	ExFreeToNPagedLookasideList(&handle->jh_revoke_cache, re);
 }
+
+RB_GENERATE(jbd2_generic_table, jbd2_node_hdr, th_node, jbd2_generic_table_cmp);
 
 static jbd2_lbcb_t *
 jbc2_lbcb_get(
 	jbd2_handle_t *handle,
 	jbd2_fsblk_t blocknr)
 {
-	jbd2_lbcb_t lbcb_tmp, *lbcb_ret;
-	RtlZeroMemory(&lbcb_tmp, sizeof(jbd2_lbcb_t));
+	jbd2_lbcb_t *lbcb_tmp, *lbcb_ret;
+	lbcb_tmp = jbd2_lbcb_alloc(handle);
+	if (!lbcb_tmp)
+		return NULL;
 
-	/* If there is existing lbcb in the table, the lbcb won't be modified */
-	lbcb_tmp.jl_header.th_block = blocknr;
-	lbcb_tmp.jl_header.th_newly = TRUE;
-	lbcb_tmp.jl_header.th_node_type = JBD2_NODE_LBCB;
-	drv_atomic_init(&lbcb_tmp.jl_header.th_refcount, 0);
-	lbcb_ret = RtlInsertElementGenericTable(
-				&handle->jh_lbcb_table,
-				&lbcb_tmp,
-				sizeof(jbd2_lbcb_t),
-				NULL);
-	if (lbcb_ret) {
-		/* Increment the reference count of the returned object */
-		drv_atomic_inc(&lbcb_ret->jl_header.th_refcount);
+	lbcb_tmp->jl_header.th_block = blocknr;
+	lbcb_tmp->jl_header.th_node_type = JBD2_NODE_LBCB;
+	drv_atomic_init(&lbcb_tmp->jl_header.th_refcount, 0);
+	lbcb_ret = (jbd2_lbcb_t *)RB_INSERT(
+							jbd2_generic_table,
+							&handle->jh_lbcb_table,
+							&lbcb_tmp->jl_header);
+	if (lbcb_ret != lbcb_tmp) {
+		/* If there's already an existing node, free the temporary node */
+		jbd2_lbcb_free(handle, lbcb_tmp);
 	}
+	/* Increment the reference count of the returned object */
+	drv_atomic_inc(&lbcb_ret->jl_header.th_refcount);
 	return lbcb_ret;
 }
 
@@ -134,11 +119,11 @@ jbd2_lbcb_put(
 )
 {
 	if (!drv_atomic_sub_and_test(&lbcb->jl_header.th_refcount, 1)) {
-		jbd2_lbcb_t lbcb_tmp;
-
-		lbcb_tmp.jl_header.th_block = lbcb->jl_header.th_block;
-		lbcb_tmp.jl_header.th_node_type = JBD2_NODE_LBCB;
-		RtlDeleteElementGenericTable(&handle->jh_lbcb_table, &lbcb_tmp);
+		RB_REMOVE(
+			jbd2_generic_table,
+			&handle->jh_lbcb_table,
+			&lbcb->jl_header);
+		jbd2_lbcb_free(handle, lbcb);
 	}
 }
 
@@ -147,23 +132,24 @@ jbc2_revoke_entry_get(
 	jbd2_handle_t *handle,
 	jbd2_fsblk_t blocknr)
 {
-	jbd2_revoke_entry_t re_tmp, *re_ret;
-	RtlZeroMemory(&re_tmp, sizeof(jbd2_revoke_entry_t));
+	jbd2_revoke_entry_t *re_tmp, *re_ret;
+	re_tmp = jbd2_revoke_entry_alloc(handle);
+	if (!re_tmp)
+		return NULL;
 
-	/* If there is existing revoke entry in the table, the revoke entry won't be modified */
-	re_tmp.re_header.th_block = blocknr;
-	re_tmp.re_header.th_newly = TRUE;
-	re_tmp.re_header.th_node_type = JBD2_NODE_REVOKE;
-	drv_atomic_init(&re_tmp.re_header.th_refcount, 0);
-	re_ret = RtlInsertElementGenericTable(
-				&handle->jh_revoke_table,
-				&re_tmp,
-				sizeof(jbd2_revoke_entry_t),
-				NULL);
-	if (re_ret) {
-		/* Increment the reference count of the returned object */
-		drv_atomic_inc(&re_ret->re_header.th_refcount);
+	re_tmp->re_header.th_block = blocknr;
+	re_tmp->re_header.th_node_type = JBD2_NODE_LBCB;
+	drv_atomic_init(&re_tmp->re_header.th_refcount, 0);
+	re_ret = (jbd2_revoke_entry_t *)RB_INSERT(
+								jbd2_generic_table,
+								&handle->jh_revoke_table,
+								&re_tmp->re_header);
+	if (re_ret != re_tmp) {
+		/* If there's already an existing node, free the temporary node */
+		jbd2_revoke_entry_free(handle, re_tmp);
 	}
+	/* Increment the reference count of the returned object */
+	drv_atomic_inc(&re_ret->re_header.th_refcount);
 	return re_ret;
 }
 
@@ -174,11 +160,11 @@ jbd2_revoke_entry_put(
 )
 {
 	if (!drv_atomic_sub_and_test(&re->re_header.th_refcount, 1)) {
-		jbd2_revoke_entry_t re_tmp;
-
-		re_tmp.re_header.th_block = re->re_header.th_block;
-		re_tmp.re_header.th_node_type = JBD2_NODE_REVOKE;
-		RtlDeleteElementGenericTable(&handle->jh_revoke_table, &re_tmp);
+		RB_REMOVE(
+			jbd2_generic_table,
+			&handle->jh_revoke_table,
+			&re->re_header);
+		jbd2_revoke_entry_free(handle, re);
 	}
 }
 
@@ -369,19 +355,27 @@ NTSTATUS jbd2_open_handle(
 		handle->jh_free_end = handle->jh_blockcnt - 1;
 		handle->jh_free_blockcnt = handle->jh_blockcnt - 1;
 
+		/* Initialize block table allocator and revoke table allocator */
+		ExInitializeNPagedLookasideList(
+				&handle->jh_lbcb_cache,
+				NULL,
+				NULL,
+				0,
+				sizeof(jbd2_lbcb_t),
+				JBD2_LBCB_TABLE_TAG,
+				0);
+		ExInitializeNPagedLookasideList(
+				&handle->jh_revoke_cache,
+				NULL,
+				NULL,
+				0,
+				sizeof(jbd2_revoke_entry_t),
+				JBD2_REVOKE_TABLE_TAG,
+				0);
+
 		/* Initialize block table and revoke table */
-		RtlInitializeGenericTable(
-			&handle->jh_lbcb_table,
-			jbd2_generic_compare,
-			jbd2_lbcb_table_alloc,
-			jbd2_lbcb_table_free,
-			NULL);
-		RtlInitializeGenericTable(
-			&handle->jh_revoke_table,
-			jbd2_generic_compare,
-			jbd2_revoke_table_alloc,
-			jbd2_revoke_table_free,
-			NULL);
+		RB_INIT(&handle->jh_lbcb_table);
+		RB_INIT(&handle->jh_revoke_table);
 	} __finally {
 		if (bcb)
 			CcUnpinData(bcb);

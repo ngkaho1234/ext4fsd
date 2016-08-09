@@ -10,6 +10,7 @@
 #endif
 
 #include "helper.h"
+#include "drv_common\drv_tree.h"
 
 #include "jbd2_fs.h"
 
@@ -49,6 +50,9 @@ struct jbd2_node_hdr {
 	jbd2_fsblk_t			th_block;		/* Block nr. of this block pointing to */
 	__bool				th_newly;		/* The entry is just newly allocated */
 	drv_atomic_t			th_refcount;	/* Reference counter of the object */
+
+	RB_ENTRY(
+		jbd2_node_hdr)	th_node;		/* Tree node */
 };
 
 /**
@@ -113,6 +117,8 @@ typedef struct jbd2_txn_handle {
 	jbd2_txn_t *		th_txn;				/* Transaction unit */
 } jbd2_txn_handle_t;
 
+typedef RB_HEAD(jbd2_generic_table, jbd2_node_hdr) jbd2_generic_table_t;
+
 /**
  * @brief JBD2 log handle
  */
@@ -135,13 +141,16 @@ typedef struct jbd2_handle {
 
 	journal_superblock_t *	jh_sb;			/* Superblock buffer */
 
-	RTL_GENERIC_TABLE	jh_lbcb_table;		/* LBCB table logged by JBD2 */
-	RTL_GENERIC_TABLE	jh_revoke_table;	/* Revoke table */
+	jbd2_generic_table_t	jh_lbcb_table;		/* LBCB table logged by JBD2 */
+	jbd2_generic_table_t	jh_revoke_table;	/* Revoke table */
 
-	void (*after_commit)(					/* After commit callback */
-			struct jbd2_handle *handle,
-			jbd2_txn_t *txn
-		);
+	NPAGED_LOOKASIDE_LIST	jh_lbcb_cache;		/* Allocation cache for lbcb */
+	NPAGED_LOOKASIDE_LIST	jh_revoke_cache;	/* Allocation cache for revoke entries */
+
+	void					(*after_commit)(	/* After commit callback */
+							struct jbd2_handle *handle,
+							jbd2_txn_t *txn
+						);
 } jbd2_handle_t;
 
 /* JBD2 pool tags */

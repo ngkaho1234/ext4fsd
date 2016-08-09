@@ -98,5 +98,8 @@
     <ClInclude Include="include\helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\drv_common\drv_tree.h">
+      <Filter>Header Files\drv_common</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
