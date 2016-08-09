@@ -4,6 +4,11 @@
 
 #pragma once
 
+/* Use AVL table instead of SPLAY table */
+#ifndef RTL_USE_AVL_TABLES
+ #define RTL_USE_AVL_TABLES
+#endif
+
 #include "helper.h"
 
 #include "jbd2_fs.h"
@@ -29,37 +34,53 @@ struct jbd2_txn;
 struct jbd2_handle;
 
 /**
+ * @brief Node type of in-tree entries
+ */
+enum jbd2_node_type {
+	JBD2_NODE_LBCB,
+	JBD2_NODE_REVOKE
+};
+
+/**
+ * @brief Node header of in-tree entries
+ */
+struct jbd2_node_hdr {
+	enum jbd2_node_type	th_node_type;	/* Node type of entry */
+	jbd2_fsblk_t			th_block;		/* Block nr. of this block pointing to */
+};
+
+/**
  * @brief Logged BCB
  */
 typedef struct jbd2_lbcb {
-	jbd2_fsblk_t		jl_block;			/* Block nr. of this lbcb pointing to */
-	void *			jl_bcb;			/* The bcb to be logged */
-	void *			jl_data;			/* Data field of bcb logged */
+	struct jbd2_node_hdr	jl_header;			/* Node header of LBCB */
+	void *				jl_bcb;			/* The bcb to be logged */
+	void *				jl_data;			/* Data field of bcb logged */
 
-	struct jbd2_txn *	jl_txn;			/* The transaction this LBCB belongs to */
-	struct jbd2_txn *	jl_cp_txn;			/*
-									 * The the most recent transaction on checkpoint
-									 * queue this LBCB belonged to 
-									 */
+	struct jbd2_txn *		jl_txn;			/* The transaction this LBCB belongs to */
+	struct jbd2_txn *		jl_cp_txn;			/*
+										 * The the most recent transaction on checkpoint
+										 * queue this LBCB belonged to 
+										 */
 
-	LIST_ENTRY		jl_txn_list_node;	/* Chain node of lbcb within a transaction */
-	LIST_ENTRY		jl_cp_txn_list_node;	/*
-									 * Chain node of lbcb within the most recent
-									 * transaction on checkpoint
-									 */
+	LIST_ENTRY			jl_txn_list_node;	/* Chain node of lbcb within a transaction */
+	LIST_ENTRY			jl_cp_txn_list_node;	/*
+										 * Chain node of lbcb within the most recent
+										 * transaction on checkpoint
+										 */
 } jbd2_lbcb_t;
 
 /**
  * @brief  Revoke entry
  */
 typedef struct jbd2_revoke_entry {
-	jbd2_fsblk_t	re_block;	/* Block number not to be replayed */
-	jbd2_tid_t		re_tid;	/*
-						 * For any transaction id smaller
-						 * than trans_id, records of @block
-						 * in those transactions should not
-						 * be replayed
-						 */
+	struct jbd2_node_hdr	re_header;		/* Node header of LBCB */
+	jbd2_tid_t				re_tid;			/*
+										 * For any transaction id smaller
+										 * than trans_id, records of @block
+										 * in those transactions should not
+										 * be replayed
+										 */
 } jbd2_revoke_entry_t;
 
 /**
@@ -103,8 +124,8 @@ typedef struct jbd2_handle {
 
 	journal_superblock_t *	jh_sb;			/* Superblock buffer */
 
-	RTL_AVL_TABLE		jh_block_table;		/* Block table logged by JBD2 */
-	RTL_AVL_TABLE		jh_revoke_table;	/* Revoke table */
+	RTL_GENERIC_TABLE	jh_lbcb_table;		/* LBCB table logged by JBD2 */
+	RTL_GENERIC_TABLE	jh_revoke_table;	/* Revoke table */
 
 	void (*after_commit)(					/* After commit callback */
 			struct jbd2_handle *handle,
@@ -112,9 +133,12 @@ typedef struct jbd2_handle {
 		);
 } jbd2_handle_t;
 
-#define JBD2_POOL_TAG '2BDJ'
-#define JBD2_SUPERBLOCK_TAG 'BS2J'
-#define JBD2_RECOVER_POOL_TAG 'ER2J'
+/* JBD2 pool tags */
+#define JBD2_POOL_TAG			'2BDJ'
+#define JBD2_SUPERBLOCK_TAG		'BS2J'
+#define JBD2_RECOVER_POOL_TAG	'ER2J'
+#define JBD2_LBCB_TABLE_TAG		'TL2J'
+#define JBD2_REVOKE_TABLE_TAG		'TR2J'
 
 /* jbd2_cachesup.c */
 

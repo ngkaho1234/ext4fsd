@@ -9,6 +9,100 @@
   */
 CACHE_MANAGER_CALLBACKS jbd2_cc_manager_callbacks;
 
+/**
+ * @brief Node comparsion routine for all table
+ * @param table	A pointer to the generic table
+ * @param a		A pointer to the first item to be compared
+ * @param b		A pointer to the second item to be compared
+ * @return	GenericLessThan if index of @p a < index of @p b,
+*			GenericGreaterThan if index of @p a > index of @p b,
+ *			or GenericEqual if index of @p a == index of @p b.
+ */
+static RTL_GENERIC_COMPARE_RESULTS
+jbd2_generic_compare(
+	struct _RTL_GENERIC_TABLE  *table,
+	PVOID  a,
+	PVOID  b
+)
+{
+	struct jbd2_node_hdr *hdr_a, *hdr_b;
+	hdr_a = (struct jbd2_node_hdr *)a;
+	hdr_b = (struct jbd2_node_hdr *)b;
+
+	if (hdr_a->th_block < hdr_b->th_block)
+		return GenericLessThan;
+	if (hdr_a->th_block > hdr_b->th_block)
+		return GenericGreaterThan;
+	return GenericEqual;
+}
+
+/**
+ * @brief	Allocate memory for caller-supplied data plus some 
+ *		additional memory for use by the lbcb table entry
+ * @param table		A pointer to the generic table
+ * @param byte_size	The number of bytes to allocate
+ * @return Allocated buffer address
+ */
+static PVOID
+jbd2_lbcb_table_alloc(
+	struct _RTL_GENERIC_TABLE  *table,
+	CLONG  byte_size
+)
+{
+	return ExAllocatePoolWithTag(
+				NonPagedPool,
+				byte_size,
+				JBD2_LBCB_TABLE_TAG);
+}
+
+/**
+ * @brief Deallocate memory for elements to be deleted from the lbcb table
+ * @param table	A pointer to the generic table
+ * @param buf		A pointer to the element that is being deleted
+ */
+static void
+jbd2_lbcb_table_free(
+	struct _RTL_GENERIC_TABLE  *table,
+	PVOID buf
+)
+{
+	ExFreePoolWithTag(buf, JBD2_LBCB_TABLE_TAG);
+}
+
+/**
+ * @brief	Allocate memory for caller-supplied data plus some
+ *		additional memory for use by the revoke table entry
+ * @param table		A pointer to the generic table
+ * @param byte_size	The number of bytes to allocate
+ * @return Allocated buffer address
+ */
+static PVOID
+jbd2_revoke_table_alloc(
+	struct _RTL_GENERIC_TABLE  *table,
+	CLONG  byte_size
+)
+{
+	return ExAllocatePoolWithTag(
+				NonPagedPool,
+				byte_size,
+				JBD2_REVOKE_TABLE_TAG);
+}
+
+/**
+ * @brief Deallocate memory for elements to be deleted from the revoke table
+ * @param table	A pointer to the generic table
+ * @param buf		A pointer to the element that is being deleted
+ */
+static void
+jbd2_revoke_table_free(
+	struct _RTL_GENERIC_TABLE  *table,
+	PVOID buf
+)
+{
+	ExFreePoolWithTag(buf, JBD2_REVOKE_TABLE_TAG);
+}
+
+
  /**
   * @brief Verify JBD2 superblock.
   * @param sb	JBD2 superblock
@@ -49,6 +143,20 @@ void jbd2_init()
 	jbd2_cc_manager_callbacks.ReleaseFromReadAhead = jbd2_cc_release_from_readahead;
 }
 
+/**
+ * @brief Open a journal file (we won't append the file of course...)
+ * @param log_file		FILE_OBJECT of journal file
+ * @param log_size		Size of journal file in bytes
+ * @param block_size	Block size (must match the block size of client)
+ * @param handle_ret	New handle returned if the journal file is successfully
+ *					opened
+ * @return	STATUS_SUCCESS if we successfully open a journal file, 
+ *			STATUS_DISK_CORRUPT_ERROR if the journal file is corrupted, 
+ *			STATUS_UNRECOGNIZED_VOLUME if there are unsupported, 
+ *				features enabled, 
+ *			STATUS_INSUFFICIENT_RESOURCES if there isn't enough resources, 
+ *			STATUS_UNSUCCESSFUL otherwise.
+ */
 NTSTATUS jbd2_open_handle(
 				PFILE_OBJECT log_file,
 				__s64 log_size,
@@ -96,7 +204,6 @@ NTSTATUS jbd2_open_handle(
 			__leave;
 
 		/* Verify whether the information in superblock is correct */
-
 		if (!jbd2_verify_superblock(sb_buf)) {
 			status = STATUS_DISK_CORRUPT_ERROR;
 			__leave;
@@ -113,7 +220,6 @@ NTSTATUS jbd2_open_handle(
 		}
 
 		/* Verify supported features */
-
 		dbg_print(
 			"be32_to_cpu(sb_buf->s_feature_compat) : %d\n",
 			be32_to_cpu(sb_buf->s_feature_compat));
@@ -159,7 +265,6 @@ NTSTATUS jbd2_open_handle(
 		RtlCopyMemory(handle->jh_sb, sb_buf, sizeof(journal_superblock_t));
 
 		/* Initialize the fields in journal handle */
-
 		handle->jh_log_file = log_file;
 		drv_mutex_init(&handle->jh_lock);
 		handle->jh_blocksize = block_size;
@@ -173,6 +278,20 @@ NTSTATUS jbd2_open_handle(
 		handle->jh_free_start = be32_to_cpu(handle->jh_sb->s_first);
 		handle->jh_free_end = handle->jh_blockcnt - 1;
 		handle->jh_free_blockcnt = handle->jh_blockcnt - 1;
+
+		/* Initialize block table and revoke table */
+		RtlInitializeGenericTable(
+			&handle->jh_lbcb_table,
+			jbd2_generic_compare,
+			jbd2_lbcb_table_alloc,
+			jbd2_lbcb_table_free,
+			NULL);
+		RtlInitializeGenericTable(
+			&handle->jh_revoke_table,
+			jbd2_generic_compare,
+			jbd2_revoke_table_alloc,
+			jbd2_revoke_table_free,
+			NULL);
 	} __finally {
 		if (bcb)
 			CcUnpinData(bcb);
@@ -200,5 +319,9 @@ void jbd2_flush(
 
 NTSTATUS jbd2_close_handle(jbd2_handle_t *handle)
 {
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	KEVENT event;
 
+	jbd2_flush(handle, &event, &status);
+	return status;
 }
