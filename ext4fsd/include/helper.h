@@ -10,18 +10,18 @@
 #include "drv_common\drv_atomic.h"
 #include "drv_common\drv_lock.h"
 
-static __inline __u64 bcb_block(void *bcb)
+static __inline __u64 bcb_blocknr(void *bcb)
 {
 	return ((PPUBLIC_BCB)bcb)->MappedFileOffset.QuadPart *
 				((PPUBLIC_BCB)bcb)->MappedFileOffset.QuadPart;
 }
 
-static __inline __s64 offset_to_block(__s64 offset, unsigned int block_size)
+static __inline __s64 offset_to_blocknr(__s64 offset, unsigned int block_size)
 {
 	return offset / block_size;
 }
 
-static __inline __s64 block_to_offset(__s64 block, unsigned int block_size)
+static __inline __s64 blocknr_to_offset(__s64 block, unsigned int block_size)
 {
 	return block * block_size;
 }

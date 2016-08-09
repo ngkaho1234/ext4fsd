@@ -82,7 +82,6 @@ typedef struct jbd2_handle {
 	PFILE_OBJECT			jh_log_file;		/* Log file handle */
 
 	drv_mutex_t			jh_lock;			/* Lock of the handle */
-	KEVENT				jh_event;			/* Wait on the KEVENT till operation is finished */
 
 	__u32				jh_blocksize;		/* Block size of log file */
 	__u32				jh_blockcnt;		/* Size of of log file in blocks */
@@ -91,6 +90,10 @@ typedef struct jbd2_handle {
 
 	jbd2_txn_t *			jh_running_txn;	/* Current running transaction */
 	LIST_ENTRY			jh_txn_queue;		/* A queue of transaction committed */
+
+	jbd2_logblk_t			jh_free_start;		/* Start of unused blocknr of journal */
+	jbd2_logblk_t			jh_free_end;		/* End of unused blocknr of journal */
+	jbd2_logblk_t			jh_free_blockcnt;	/* Nr. of free blocks in journal */
 
 	journal_superblock_t *	jh_sb;			/* Superblock buffer */
 

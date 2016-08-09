@@ -26,6 +26,8 @@ typedef __u64				__be64;
 
  typedef BOOLEAN			__bool;
 
+ #define UUID_SIZE			16
+
 #include "drv_endian.h"
 
 struct drv_timespec {

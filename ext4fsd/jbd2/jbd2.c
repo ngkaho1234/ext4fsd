@@ -84,7 +84,7 @@ NTSTATUS jbd2_open_handle(
 		NULL);
 
 	__try {
-		tmp.QuadPart = block_to_offset(log_size, block_size);
+		tmp.QuadPart = blocknr_to_offset(log_size, block_size);
 		cc_ret = CcPinRead(
 					log_file,
 					&tmp,
@@ -106,7 +106,7 @@ NTSTATUS jbd2_open_handle(
 			__leave;
 		}
 		if (be32_to_cpu(sb_buf->s_maxlen) <
-			offset_to_block(log_size, block_size)) {
+			offset_to_blocknr(log_size, block_size)) {
 
 			status = STATUS_DISK_CORRUPT_ERROR;
 			__leave;
@@ -157,13 +157,29 @@ NTSTATUS jbd2_open_handle(
 
 		/* Keep an in-memory copy of superblock fields */
 		RtlCopyMemory(handle->jh_sb, sb_buf, sizeof(journal_superblock_t));
+
+		/* Initialize the fields in journal handle */
+
+		handle->jh_log_file = log_file;
+		drv_mutex_init(&handle->jh_lock);
+		handle->jh_blocksize = block_size;
+		handle->jh_blockcnt = be32_to_cpu(handle->jh_sb->s_maxlen);
+		RtlCopyMemory(handle->jh_uuid, handle->jh_sb, UUID_SIZE);
+		handle->jh_max_txn = be32_to_cpu(handle->jh_sb->s_max_transaction);
+		handle->jh_running_txn = NULL;
+		InitializeListHead(&handle->jh_txn_queue);
+
+		/* Calculate the head, tail and nr. of blocks of free area in journal */
+		handle->jh_free_start = be32_to_cpu(handle->jh_sb->s_first);
+		handle->jh_free_end = handle->jh_blockcnt - 1;
+		handle->jh_free_blockcnt = handle->jh_blockcnt - 1;
 	} __finally {
 		if (bcb)
 			CcUnpinData(bcb);
 
 		if (!NT_SUCCESS(status)) {
 			if (handle->jh_sb)
-				ExFreePoolWithTag(handle->jh_sb);
+				ExFreePoolWithTag(handle->jh_sb, JBD2_SUPERBLOCK_TAG);
 
 			ExFreePoolWithTag(handle, JBD2_POOL_TAG);
 		} else {
