@@ -85,7 +85,7 @@ typedef struct jbd2_handle {
 
 	__u32				jh_blocksize;		/* Block size of log file */
 	__u32				jh_blockcnt;		/* Size of of log file in blocks */
-	__u8					jh_uuid[16];		/* UUID of journal */
+	__u8					jh_uuid[UUID_SIZE];	/* UUID of journal */
 	__u32				jh_max_txn;		/* Limit of journal blocks per trans */
 
 	jbd2_txn_t *			jh_running_txn;	/* Current running transaction */
