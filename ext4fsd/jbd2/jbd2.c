@@ -389,6 +389,35 @@ jbd2_tag_blocknr(jbd2_handle_t *handle, journal_block_tag_t *tag)
 	return blocknr;
 }
 
+/**
+ * @brief Calculate the size of a revoke entry
+ * @param handle	Handle to journal file
+ * @return size of a revoke entry in bytes
+ */
+static size_t
+jbd2_revoke_entry_size(jbd2_handle_t *handle)
+{
+	if (jbd2_has_feature_64bit(handle))
+		return sizeof(__be64);
+
+	return sizeof(__be32);
+}
+
+/**
+ * @brief Extract blocknr from revoke entry
+ * @param handle	Handle to journal file
+ * @param entry		Revoke entry
+ * @return blocknr
+ */
+static jbd2_fsblk_t
+jbd2_revoke_entry_blocknr(jbd2_handle_t *handle, void *entry)
+{
+	if (jbd2_has_feature_64bit(handle))
+		return be64_to_cpu(*(__be64 *)entry);
+
+	return be32_to_cpu(*(__be32 *)entry);
+}
+
 /*
  * @brief	Calculate the size of a block tag
  * @param handle	Handle to journal file
@@ -505,6 +534,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 	for (; tagp - buf + tag_bytes <= blocksize;
 			tagp += jbd2_tag_size(handle, tagp), nr++) {
 		__bool cc_ret;
+		jbd2_tid_t re_tid;
 		LARGE_INTEGER tmp;
 		journal_block_tag_t *tag;
 		jbd2_fsblk_t fs_blocknr;
@@ -514,13 +544,18 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 
 		fs_blocknr = jbd2_tag_blocknr(handle, tag);
 		entry = jbd2_revoke_entry_get(handle, fs_blocknr);
-		if (entry && jbd2_tid_cmp(tid, entry->re_tid) > 0)
-			continue;
+		if (entry) {
+			re_tid = entry->re_tid;
+			jbd2_revoke_entry_put(handle, entry);
+			if (jbd2_tid_cmp(tid, re_tid) <= 0)
+				continue;
+		}
 
 		/*
 		 * XXX:	We do not support multiple clients, since
 		 *	as of linux 4.x multiple clients support isn't
-		 *	available */
+		 *	available
+		 */
 		tmp.QuadPart = blocknr_to_offset(
 					blocknr + nr,
 					handle->jh_blocksize);
@@ -554,6 +589,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		}
 
 		RtlCopyMemory(to_buf, from_buf, handle->jh_blocksize);
+		CcSetDirtyPinnedData(to_bcb, NULL);
 
 		CcUnpinData(from_bcb);
 		CcUnpinData(to_bcb);
@@ -563,6 +599,42 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 	}
 
 	return status;
+}
+
+static NTSTATUS
+jbd2_scan_revoke_entries(
+		jbd2_handle_t *handle,
+		jbd2_tid_t tid,
+		journal_header_t *jh_buf)
+{
+	size_t entry_sz = jbd2_revoke_entry_size(handle);
+	size_t csum_size = 0;
+	char *bufp = (char *)jh_buf;
+	size_t rcount;
+
+	if (jbd2_has_csum_v2or3(handle))
+		csum_size = sizeof(struct journal_revoke_tail);
+
+	rcount = be32_to_cpu(jh_buf->r_count);
+
+	/* Check for corrupted revocation block */
+	if (rcount > handle->jh_blocksize - csum_size)
+		return STATUS_DISK_CORRUPT_ERROR;
+
+	for (bufp += sizeof(journal_header_t);
+			bufp + entry_sz <= jh_buf + rcount;
+			bufp += entry_sz) {
+		jbd2_fsblk_t fs_blocknr = jbd2_revoke_entry_blocknr(bufp);
+		jbd2_revoke_entry_t *revoke_entry;
+
+		revoke_entry = jbd2_revoke_entry_get(handle, fs_blocknr);
+		if (!revoke_entry)
+			return STATUS_INSUFFICIENT_RESOURCES;
+
+		revoke_entry->re_tid = tid;
+		jbd2_revoke_entry_put(handle, revoke_entry);
+	}
+	return STATUS_SUCCESS;
 }
 
 /**
@@ -659,6 +731,8 @@ NTSTATUS jbd2_replay_one_pass(
 				jbd2_wrap(handle, curr_blocknr);
 				break;
 			case JBD2_REVOKE_BLOCK:
+				journal_revoke_header_t *revoke_header;
+				revoke_header = (journal_revoke_header_t *)jh_buf;
 				curr_blocknr++;
 				jbd2_wrap(handle, curr_blocknr);
 			}
