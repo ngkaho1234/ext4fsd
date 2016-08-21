@@ -436,6 +436,39 @@ static __bool jbd2_verify_commit_block(
 	return jbd2_commit_block_csum_verify(handle, buf);
 }
 
+static __bool jbd2_revoke_block_csum_verify(
+				jbd2_handle_t *handle,
+				void *buf)
+{
+	journal_block_tail_t *tail;
+	__u32 provided;
+	__u32 calculated;
+
+	if (!jbd2_has_csum_v2or3(handle))
+		return TRUE;
+
+	tail = (journal_block_tail_t *)((char *)buf + handle->jh_blocksize -
+			sizeof(journal_block_tail_t));
+	provided = tail->t_checksum;
+	tail->t_checksum = 0;
+	calculated = jbd2_chksum(handle, handle->jh_csum_seed, buf, handle->jh_blocksize);
+	tail->t_checksum = provided;
+
+	return (provided == cpu_to_be32(calculated))
+			? TRUE : FALSE;
+}
+
+static __bool jbd2_verify_revoke_block(
+			jbd2_handle_t *handle,
+			void *buf)
+{
+	journal_header_t *hdr = (journal_header_t *)buf;
+	if (be32_to_cpu(hdr->h_magic) != JBD2_MAGIC_NUMBER)
+		return FALSE;
+
+	return jbd2_revoke_block_csum_verify(handle, buf);
+}
+
 /*
  * @brief	Calculate the minimal size of a block tag
  * @remarks	Copied from e2fsprogs/lib/ext2fs/kernel-jbd.h
@@ -838,6 +871,16 @@ NTSTATUS jbd2_replay_one_pass(
 				jbd2_wrap(handle, curr_blocknr);
 				break;
 			case JBD2_REVOKE_BLOCK:
+				veri_ret = jbd2_verify_revoke_block(handle, jh_buf);
+				if (!veri_ret) {
+					if (phase == JBD2_PHASE_SCAN)
+						status = STATUS_SUCCESS;
+					else
+						status = STATUS_DISK_CORRUPT_ERROR;
+
+					goto end;
+				}
+
 				if (phase == JBD2_PHASE_SCAN_REVOKE)
 					jbd2_scan_revoke_entries(handle, curr_tid, jh_buf);
 
