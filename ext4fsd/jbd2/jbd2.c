@@ -464,6 +464,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 			void *buf)
 {
 	char *tagp;
+	NTSTATUS status = STATUS_SUCCESS;
 	int blocksize = handle->jh_blocksize;
 	int tag_bytes = jbd2_min_tag_size(handle);
 
@@ -487,13 +488,18 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 				PIN_WAIT,
 				&bcb,
 				&jh_buf);
+		if (!cc_ret) {
+			status = STATUS_UNEXPECTED_IO_ERROR;
+			break;
+		}
 
+		CcUnpinData(bcb);
 		if (jbd2_is_last_tag(handle, tag))
 			break;
 		tagp += jbd2_tag_size(handle, tag);
 	}
 
-	return STATUS_SUCCESS;
+	return status;
 }
 
 /**
