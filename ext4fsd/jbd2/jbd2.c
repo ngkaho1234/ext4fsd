@@ -437,17 +437,54 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 
 	tagp = (char *)buf + sizeof(journal_header_t);
 
-	while ((tagp - buf + tag_bytes) <= blocksize) {
+	while (tagp - buf + tag_bytes <= blocksize) {
 		journal_block_tag_t *tag;
 		tag = (journal_block_tag_t *)tagp;
 
 		nr++;
-		tagp += jbd2_tag_size(handle, tag);
 		if (jbd2_is_last_tag(handle, tag))
 			break;
+		tagp += jbd2_tag_size(handle, tag);
 	}
 
 	return nr;
+}
+
+/**
+ * @brief Replay the blocks mentioned in a descriptor block
+ * @param handle	Handle to journal file
+ * @param blocknr	Block number of the descriptor block
+ * @param buf		Descriptor block buffer
+ * @return	STATUS_SUCCESS indicating that the operation succeeds,
+ * 		otherwise the operation fails.
+ */
+static NTSTATUS
+jbd2_replay_descr_block(jbd2_handle_t *handle,
+			jbd2_logblk_t blocknr,
+			void *buf)
+{
+	char *tagp;
+	int blocksize = handle->jh_blocksize;
+	int tag_bytes = jbd2_min_tag_size(handle);
+
+	if (jbd2_has_csum_v2or3(handle))
+		blocksize -= sizeof(journal_block_tail_t);
+
+	tagp = (char *)buf + sizeof(journal_header_t);
+
+	while (tagp - buf + tag_bytes <= blocksize) {
+		jbd2_fsblk_t fs_blocknr;
+		journal_block_tag_t *tag;
+		tag = (journal_block_tag_t *)tagp;
+
+		fs_blocknr = jbd2_tag_blocknr(handle, tag);
+
+		if (jbd2_is_last_tag(handle, tag))
+			break;
+		tagp += jbd2_tag_size(handle, tag);
+	}
+
+	return STATUS_SUCCESS;
 }
 
 /**
@@ -491,7 +528,7 @@ NTSTATUS jbd2_replay_one_pass(
 					&jh_buf);
 			if (!cc_ret) {
 				status = STATUS_UNEXPECTED_IO_ERROR;
-				__leave;
+				goto end;
 			}
 
 			if (be32_to_cpu(jh_buf->h_sequence) != curr_tid) {
@@ -499,7 +536,8 @@ NTSTATUS jbd2_replay_one_pass(
 					status = STATUS_SUCCESS;
 				else
 					status = STATUS_DISK_CORRUPT_ERROR;
-				__leave;
+
+				goto end;
 			}
 
 			switch (be32_to_cpu(jh_buf->h_blocktype)) {
@@ -511,23 +549,44 @@ NTSTATUS jbd2_replay_one_pass(
 						status = STATUS_SUCCESS;
 					else
 						status = STATUS_DISK_CORRUPT_ERROR;
-					__leave;
+
+					goto end;
 				}
 
+				nr_tags = jbd2_count_tags(handle, jh_buf);
 				if (phase != JBD2_PHASE_REPLAY) {
-					nr_tags = jbd2_count_tags(handle, jh_buf);
 					curr_blocknr += nr_tags + 1;
+					jbd2_wrap(handle, curr_blocknr);
 					break;
+				} else {
+					status = jbd2_replay_descr_block(
+								handle,
+								curr_blocknr,
+								jh_buf);
+					if (!NT_SUCCESS(status))
+						goto end;
+
+					curr_blocknr += nr_tags + 1;
+					jbd2_wrap(handle, curr_blocknr);
 				}
+
+				break;
 			case JBD2_COMMIT_BLOCK:
+				curr_blocknr++;
+				curr_tid++;
+				jbd2_wrap(handle, curr_blocknr);
+				break;
 			case JBD2_REVOKE_BLOCK:
+				curr_blocknr++;
+				jbd2_wrap(handle, curr_blocknr);
 			}
 		} __finally {
 			if (cc_ret)
 				CcUnpinData(bcb);
 		}
 	}
-	if (status == STATUS_SUCCESS && phase == JBD2_PHASE_SCAN) {
+end:
+	if (NT_SUCCESS(status) && phase == JBD2_PHASE_SCAN) {
 
 	}
 	return status;
@@ -544,6 +603,7 @@ NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
 
 /**
  * @brief Open a journal file (we won't append the file of course...)
+ * @param client_file		FILE_OBJECT of client file
  * @param log_file		FILE_OBJECT of journal file
  * @param log_size		Size of journal file in bytes
  * @param block_size	Block size (must match the block size of client)
@@ -557,6 +617,7 @@ NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
  *			STATUS_UNSUCCESSFUL otherwise.
  */
 NTSTATUS jbd2_open_handle(
+				PFILE_OBJECT client_file,
 				PFILE_OBJECT log_file,
 				__s64 log_size,
 				unsigned int block_size,
@@ -665,6 +726,7 @@ NTSTATUS jbd2_open_handle(
 
 		/* Initialize the fields in journal handle */
 		handle->jh_log_file = log_file;
+		handle->jh_client_file = client_file;
 		drv_mutex_init(&handle->jh_lock);
 		handle->jh_blocksize = block_size;
 		handle->jh_blockcnt = be32_to_cpu(handle->jh_sb->s_maxlen);
