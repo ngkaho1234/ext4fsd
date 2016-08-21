@@ -35,6 +35,19 @@ do {													\
 		var -= ((handle)->jh_end - (handle)->jh_first + 1);		\
 } while (0)
 
+/*
+ * To prevent overflowing we need these inline routines for
+ * tid comparsion.
+ */
+static int jbd2_tid_cmp(jbd2_tid_t a, jbd2_tid_t b)
+{
+	if ((__s32)(a - b) < 0)
+		return -1;
+	if ((__s32)(a - b) > 0)
+		return 1;
+	return 0;
+}
+
  /**
   * @brief Cache manager callbacks used by JBD2 driver
   */
@@ -185,7 +198,7 @@ jbd2_lbcb_put(
  * @return an LBCB
  */
 static jbd2_revoke_entry_t *
-jbc2_revoke_entry_get(
+jbd2_revoke_entry_get(
 	jbd2_handle_t *handle,
 	jbd2_fsblk_t blocknr)
 {
@@ -385,17 +398,20 @@ jbd2_tag_blocknr(jbd2_handle_t *handle, journal_block_tag_t *tag)
 static size_t
 jbd2_tag_size(
 	jbd2_handle_t *handle,
-	journal_block_tag_t *tag)
+	void *tag)
 {
 	size_t sz = jbd2_min_tag_size(handle);
 	if (jbd2_has_feature_csum3(handle)) {
 		journal_block_tag3_t *tag3;
 		tag3 = (journal_block_tag3_t *)tag;
 
-		if (!(be32_to_cpu(tag->t_flags) & JBD2_FLAG_SAME_UUID))
+		if (!(be32_to_cpu(tag3->t_flags) & JBD2_FLAG_SAME_UUID))
 			sz += UUID_SIZE;
 	} else {
-		if (!(be16_to_cpu(tag->t_flags) & JBD2_FLAG_SAME_UUID))
+		journal_block_tag_t *tag1;
+		tag1 = (journal_block_tag1_t *)tag;
+
+		if (!(be16_to_cpu(tag1->t_flags) & JBD2_FLAG_SAME_UUID))
 			sz += UUID_SIZE;
 	}
 	return sz;
@@ -411,16 +427,19 @@ jbd2_tag_size(
 static __bool
 jbd2_is_last_tag(
 	bd2_handle_t *handle,
-	journal_block_tag_t *tag)
+	void *tag)
 {
 	if (jbd2_has_feature_csum3(handle)) {
 		journal_block_tag3_t *tag3;
 		tag3 = (journal_block_tag3_t *)tag;
 
-		if (be32_to_cpu(tag->t_flags) & JBD2_FLAG_LAST_TAG)
+		if (be32_to_cpu(tag3->t_flags) & JBD2_FLAG_LAST_TAG)
 			return TRUE;
 	} else {
-		if (be16_to_cpu(tag->t_flags) & JBD2_FLAG_LAST_TAG)
+		journal_block_tag_t *tag1;
+		tag1 = (journal_block_tag3_t *)tag;
+
+		if (be16_to_cpu(tag1->t_flags) & JBD2_FLAG_LAST_TAG)
 			return TRUE;
 	}
 	return FALSE;
@@ -444,14 +463,13 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 
 	tagp = (char *)buf + sizeof(journal_header_t);
 
-	while (tagp - buf + tag_bytes <= blocksize) {
+	for (; tagp - buf + tag_bytes <= blocksize;
+			tagp += jbd2_tag_size(handle, tagp), nr++) {
 		journal_block_tag_t *tag;
 		tag = (journal_block_tag_t *)tagp;
 
-		nr++;
 		if (jbd2_is_last_tag(handle, tag))
 			break;
-		tagp += jbd2_tag_size(handle, tag);
 	}
 
 	return nr;
@@ -460,17 +478,20 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 /**
  * @brief Replay the blocks mentioned in a descriptor block
  * @param handle	Handle to journal file
- * @param blocknr	Block number of the descriptor block
+ * @param tid		Transaction ID the descriptor block belongs to
+ * @param blocknr	Block number of the descriptor block in log file
  * @param buf		Descriptor block buffer
  * @return	STATUS_SUCCESS indicating that the operation succeeds,
  * 		otherwise the operation fails.
  */
 static NTSTATUS
 jbd2_replay_descr_block(jbd2_handle_t *handle,
+			jbd2_tid_t tid,
 			jbd2_logblk_t blocknr,
 			void *buf)
 {
 	char *tagp;
+	jbd2_logblk_t nr = 1;
 	NTSTATUS status = STATUS_SUCCESS;
 	int blocksize = handle->jh_blocksize;
 	int tag_bytes = jbd2_min_tag_size(handle);
@@ -479,18 +500,30 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		blocksize -= sizeof(journal_block_tail_t);
 
 	tagp = (char *)buf + sizeof(journal_header_t);
+	tag = (journal_block_tag_t *)tagp;
 
-	while (tagp - buf + tag_bytes <= blocksize) {
+	for (; tagp - buf + tag_bytes <= blocksize;
+			tagp += jbd2_tag_size(handle, tagp), nr++) {
 		__bool cc_ret;
 		LARGE_INTEGER tmp;
-		jbd2_fsblk_t fs_blocknr;
 		journal_block_tag_t *tag;
+		jbd2_fsblk_t fs_blocknr;
+		jbd2_revoke_entry_t *entry;
 		void *from_bcb, *from_buf, *to_bcb, *to_buf;
 		tag = (journal_block_tag_t *)tagp;
 
 		fs_blocknr = jbd2_tag_blocknr(handle, tag);
-		/* XXX: We do not support multiple clients */
-		tmp.QuadPart = blocknr_to_offset(log_size, blocksize);
+		entry = jbd2_revoke_entry_get(handle, fs_blocknr);
+		if (entry && jbd2_tid_cmp(tid, entry->re_tid) > 0)
+			continue;
+
+		/*
+		 * XXX:	We do not support multiple clients, since
+		 *	as of linux 4.x multiple clients support isn't
+		 *	available */
+		tmp.QuadPart = blocknr_to_offset(
+					blocknr + nr,
+					handle->jh_blocksize);
 		cc_ret = CcPinRead(
 				handle->jh_log_file,
 				&tmp,
@@ -503,10 +536,30 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 			break;
 		}
 
+		tmp.QuadPart = blocknr_to_offset(
+					fs_blocknr,
+					handle->jh_blocksize);
+		cc_ret = CcPreparePinWrite(
+					handle->jh_client_file,
+					&tmp,
+					handle->jh_blocksize,
+					TRUE,
+					PIN_WAIT,
+					&to_bcb,
+					&to_buf);
+		if (!cc_ret) {
+			status = STATUS_UNEXPECTED_IO_ERROR;
+			CcUnpinData(from_bcb);
+			break;
+		}
+
+		RtlCopyMemory(to_buf, from_buf, handle->jh_blocksize);
+
 		CcUnpinData(from_bcb);
+		CcUnpinData(to_bcb);
+
 		if (jbd2_is_last_tag(handle, tag))
 			break;
-		tagp += jbd2_tag_size(handle, tag);
 	}
 
 	return status;
@@ -545,7 +598,9 @@ NTSTATUS jbd2_replay_one_pass(
 		journal_header_t *jh_buf;
 
 		__try {
-			tmp.QuadPart = blocknr_to_offset(log_size, blocksize);
+			tmp.QuadPart = blocknr_to_offset(
+						curr_blocknr,
+						handle->jh_blocksize);
 			cc_ret = CcPinRead(
 					handle->jh_log_file,
 					&tmp,
