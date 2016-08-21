@@ -389,6 +389,24 @@ jbd2_tag_size(
 	return sz;
 }
 
+static __bool
+jbd2_is_last_tag(
+	bd2_handle_t *handle,
+	journal_block_tag_t *tag)
+{
+	if (jbd2_has_feature_csum3(handle)) {
+		journal_block_tag3_t *tag3;
+		tag3 = (journal_block_tag3_t *)tag;
+
+		if (be32_to_cpu(tag->t_flags) & JBD2_FLAG_LAST_TAG)
+			return TRUE;
+	} else {
+		if (be16_to_cpu(tag->t_flags) & JBD2_FLAG_LAST_TAG)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * @brief Count the number of in-use tags in a journal descriptor block.
  * @param handle	Handle to journal file
@@ -412,23 +430,9 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 		tag = (journal_block_tag_t *)tagp;
 
 		nr++;
-		tagp += tag_bytes;
-		if (jbd2_has_feature_csum3(handle)) {
-			journal_block_tag3_t *tag3;
-			tag3 = (journal_block_tag3_t *)tag;
-
-			if (!(be32_to_cpu(tag3->t_flags) & JBD2_FLAG_SAME_UUID))
-				tagp += UUID_SIZE;
-
-			if (be32_to_cpu(tag3->t_flags) & JBD2_FLAG_LAST_TAG)
-				break;
-		} else {
-			if (!(be16_to_cpu(tag->t_flags) & JBD2_FLAG_SAME_UUID))
-				tagp += UUID_SIZE;
-
-			if (be16_to_cpu(tag->t_flags) & JBD2_FLAG_LAST_TAG)
-				break;
-		}
+		tagp += jbd2_tag_size(handle, tag);
+		if (jbd2_is_last_tag(handle, tag))
+			break;
 	}
 
 	return nr;
