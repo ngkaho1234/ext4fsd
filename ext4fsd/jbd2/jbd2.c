@@ -104,10 +104,82 @@ jbd2_revoke_table_free(
 
 static jbd2_lbcb_t *
 jbc2_lbcb_get(
-	jbd2_handle_t handle,
+	jbd2_handle_t *handle,
 	jbd2_fsblk_t blocknr)
 {
+	jbd2_lbcb_t lbcb_tmp, *lbcb_ret;
+	RtlZeroMemory(&lbcb_tmp, sizeof(jbd2_lbcb_t));
 
+	/* If there is existing lbcb in the table, the lbcb won't be modified */
+	lbcb_tmp.jl_header.th_block = blocknr;
+	lbcb_tmp.jl_header.th_newly = TRUE;
+	lbcb_tmp.jl_header.th_node_type = JBD2_NODE_LBCB;
+	drv_atomic_init(&lbcb_tmp.jl_header.th_refcount, 0);
+	lbcb_ret = RtlInsertElementGenericTable(
+				&handle->jh_lbcb_table,
+				&lbcb_tmp,
+				sizeof(jbd2_lbcb_t),
+				NULL);
+	if (lbcb_ret) {
+		/* Increment the reference count of the returned object */
+		drv_atomic_inc(&lbcb_ret->jl_header.th_refcount);
+	}
+	return lbcb_ret;
+}
+
+static void
+jbd2_lbcb_put(
+	jbd2_handle_t *handle,
+	jbd2_lbcb_t *lbcb
+)
+{
+	if (!drv_atomic_sub_and_test(&lbcb->jl_header.th_refcount, 1)) {
+		jbd2_lbcb_t lbcb_tmp;
+
+		lbcb_tmp.jl_header.th_block = lbcb->jl_header.th_block;
+		lbcb_tmp.jl_header.th_node_type = JBD2_NODE_LBCB;
+		RtlDeleteElementGenericTable(&handle->jh_lbcb_table, &lbcb_tmp);
+	}
+}
+
+static jbd2_revoke_entry_t *
+jbc2_revoke_entry_get(
+	jbd2_handle_t *handle,
+	jbd2_fsblk_t blocknr)
+{
+	jbd2_revoke_entry_t re_tmp, *re_ret;
+	RtlZeroMemory(&re_tmp, sizeof(jbd2_revoke_entry_t));
+
+	/* If there is existing revoke entry in the table, the revoke entry won't be modified */
+	re_tmp.re_header.th_block = blocknr;
+	re_tmp.re_header.th_newly = TRUE;
+	re_tmp.re_header.th_node_type = JBD2_NODE_REVOKE;
+	drv_atomic_init(&re_tmp.re_header.th_refcount, 0);
+	re_ret = RtlInsertElementGenericTable(
+				&handle->jh_revoke_table,
+				&re_tmp,
+				sizeof(jbd2_revoke_entry_t),
+				NULL);
+	if (re_ret) {
+		/* Increment the reference count of the returned object */
+		drv_atomic_inc(&re_ret->re_header.th_refcount);
+	}
+	return re_ret;
+}
+
+static void
+jbd2_revoke_entry_put(
+	jbd2_handle_t *handle,
+	jbd2_revoke_entry_t *re
+)
+{
+	if (!drv_atomic_sub_and_test(&re->re_header.th_refcount, 1)) {
+		jbd2_revoke_entry_t re_tmp;
+
+		re_tmp.re_header.th_block = re->re_header.th_block;
+		re_tmp.re_header.th_node_type = JBD2_NODE_REVOKE;
+		RtlDeleteElementGenericTable(&handle->jh_revoke_table, &re_tmp);
+	}
 }
 
 
