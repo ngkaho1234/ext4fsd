@@ -371,8 +371,9 @@ static __bool jbd2_features_supported(__be32 features, __u32 mask)
 	return !(be32_to_cpu(features) & ~mask);
 }
 
-static __bool jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
-					void *buf)
+static __bool jbd2_descr_block_csum_verify(
+				jbd2_handle_t *handle,
+				void *buf)
 {
 	journal_block_tail_t *tail;
 	__u32 provided;
@@ -394,12 +395,45 @@ static __bool jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
 
 static __bool jbd2_verify_descr_block(
 			jbd2_handle_t *handle,
-			journal_header_t *jh_buf)
+			void *buf)
 {
+	journal_header_t *hdr = (journal_header_t *)buf;
 	if (be32_to_cpu(hdr->h_magic) != JBD2_MAGIC_NUMBER)
 		return FALSE;
 
-	return jbd2_descr_block_csum_verify(handle, jh_buf);
+	return jbd2_descr_block_csum_verify(handle, buf);
+}
+
+static __bool jbd2_commit_block_csum_verify(
+				jbd2_handle *handle,
+				void *buf)
+{
+	journal_commit_header_t *commit_hdr;
+	__u32 provided;
+	__u32 calculated;
+	commit_hdr = (journal_commit_header_t *)buf;
+
+	if (!jbd2_has_csum_v2or3(handle))
+		return TRUE;
+
+	provided = commit_hdr->h_chksum[0];
+	commit_hdr->h_chksum[0] = 0;
+	calculated = jbd2_chksum(handle, handle->jh_csum_seed, buf, handle->jh_blocksize);
+	commit_hdr->h_chksum[0] = provided;
+
+	return (provided == cpu_to_be32(calculated))
+			? TRUE : FALSE;
+}
+
+static __bool jbd2_verify_commit_block(
+			jbd2_handle_t *handle,
+			void *buf)
+{
+	journal_header_t *hdr = (journal_header_t *)buf;
+	if (be32_to_cpu(hdr->h_magic) != JBD2_MAGIC_NUMBER)
+		return FALSE;
+
+	return jbd2_commit_block_csum_verify(handle, buf);
 }
 
 /*
@@ -785,6 +819,16 @@ NTSTATUS jbd2_replay_one_pass(
 
 				break;
 			case JBD2_COMMIT_BLOCK:
+				veri_ret = jbd2_verify_commit_block(handle, jh_buf);
+				if (!veri_ret) {
+					if (phase == JBD2_PHASE_SCAN)
+						status = STATUS_SUCCESS;
+					else
+						status = STATUS_DISK_CORRUPT_ERROR;
+
+					goto end;
+				}
+
 				if (phase == JBD2_PHASE_SCAN) {
 					recover_info->ri_end_txn = curr_tid;
 					recover_info->ri_has_txn = TRUE;
