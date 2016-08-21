@@ -838,7 +838,7 @@ NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
 	if (!status)
 		goto cleanup;
 cleanup:
-	// jbd2_revoke_table_clear(handle);
+	jbd2_revoke_table_clear(handle);
 	return status;
 }
 
