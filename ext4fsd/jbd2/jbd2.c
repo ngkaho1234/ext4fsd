@@ -473,11 +473,20 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 	tagp = (char *)buf + sizeof(journal_header_t);
 
 	while (tagp - buf + tag_bytes <= blocksize) {
+		__bool cc_ret;
 		jbd2_fsblk_t fs_blocknr;
 		journal_block_tag_t *tag;
 		tag = (journal_block_tag_t *)tagp;
 
 		fs_blocknr = jbd2_tag_blocknr(handle, tag);
+		/* XXX: We do not support multiple clients */
+		cc_ret = CcPinRead(
+				handle->jh_log_file,
+				&tmp,
+				handle->jh_blocksize,
+				PIN_WAIT,
+				&bcb,
+				&jh_buf);
 
 		if (jbd2_is_last_tag(handle, tag))
 			break;
@@ -520,9 +529,9 @@ NTSTATUS jbd2_replay_one_pass(
 
 		__try {
 			cc_ret = CcPinRead(
-					log_file,
+					handle->jh_log_file,
 					&tmp,
-					block_size,
+					handle->jh_blocksize,
 					PIN_WAIT,
 					&bcb,
 					&jh_buf);
