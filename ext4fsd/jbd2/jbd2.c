@@ -19,6 +19,9 @@ struct recovery_info {
 	jbd2_tid_t	ri_start_txn;
 	jbd2_tid_t	ri_end_txn;
 
+	jbd2_logblk_t	ri_start_blocknr;
+	jbd2_logblk_t	ri_end_blocknr;
+
 	int		ri_nr_replays;
 	int		ri_nr_revokes;
 };
@@ -301,7 +304,7 @@ static __bool jbd2_features_supported(__be32 features, __u32 mask)
 	return !(be32_to_cpu(features) & ~mask);
 }
 
-static int jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
+static __bool jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
 					void *buf)
 {
 	journal_block_tail_t *tail;
@@ -309,7 +312,7 @@ static int jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
 	__u32 calculated;
 
 	if (!jbd2_has_csum_v2or3(handle))
-		return 1;
+		return TRUE;
 
 	tail = (journal_block_tail_t *)((char *)buf + handle->jh_blocksize -
 			sizeof(journal_block_tail_t));
@@ -318,10 +321,11 @@ static int jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
 	calculated = jbd2_chksum(handle, handle->jh_csum_seed, buf, handle->jh_blocksize);
 	tail->t_checksum = provided;
 
-	return provided == cpu_to_be32(calculated);
+	return (provided == cpu_to_be32(calculated))
+			? TRUE : FALSE;
 }
 
-static int jbd2_verify_descr_block(
+static __bool jbd2_verify_descr_block(
 			jbd2_handle_t *handle,
 			journal_header_t *jh_buf)
 {
@@ -405,16 +409,22 @@ NTSTATUS jbd2_replay_one_pass(
 			struct recover_info *recover_info,
 			int phase)
 {
-	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	NTSTATUS status = STATUS_SUCCESS;
 	jbd2_logblk_t curr_blocknr = be32_to_cpu(handle->jh_sb->s_start);
 	jbd2_tid_t curr_tid = be32_to_cpu(handle->jh_sb->s_sequence);
 	RtlZeroMemory(recover_info, sizeof(struct recover_info));
 
-	__try {
-		while (1) {
-			void *bcb;
-			BOOLEAN cc_ret;
-			journal_header_t *jh_buf;
+	if (phase == JBD2_PHASE_SCAN) {
+		recover_info->ri_start_txn = curr_tid;
+		recover_info->ri_start_blocknr = curr_blocknr;
+	}
+
+	while (1) {
+		void *bcb;
+		__bool cc_ret, veri_ret;
+		journal_header_t *jh_buf;
+
+		__try {
 			cc_ret = CcPinRead(
 					log_file,
 					&tmp,
@@ -428,18 +438,33 @@ NTSTATUS jbd2_replay_one_pass(
 			}
 
 			if (be32_to_cpu(jh_buf->h_sequence) != curr_tid) {
-				status = STATUS_SUCCESS;
+				if (phase == JBD2_PHASE_SCAN)
+					status = STATUS_SUCCESS;
+				else
+					status = STATUS_DISK_CORRUPT_ERROR;
 				__leave;
 			}
 
 			switch (be32_to_cpu(jh_buf->h_blocktype)) {
 			case JBD2_DESCRIPTOR_BLOCK:
+				veri_ret = jbd2_verify_descr_block(handle, jh_buf);
+				if (!veri_ret) {
+					if (phase == JBD2_PHASE_SCAN)
+						status = STATUS_SUCCESS;
+					else
+						status = STATUS_DISK_CORRUPT_ERROR;
+					__leave;
+				}
+
 			case JBD2_COMMIT_BLOCK:
 			case JBD2_REVOKE_BLOCK:
 			}
+		} __finally {
+			if (cc_ret)
+				CcUnpinData(bcb);
 		}
-		status = STATUS_SUCCESS;
-	} __finally {
+	}
+	if (status == STATUS_SUCCESS && phase == JBD2_PHASE_SCAN) {
 
 	}
 	return status;
