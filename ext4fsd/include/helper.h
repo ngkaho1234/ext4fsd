@@ -26,7 +26,7 @@ static __inline __s64 blocknr_to_offset(__s64 block, unsigned int block_size)
 	return block * block_size;
 }
 
-#if !DEBUG
+#ifdef DEBUG
  #define dbg_print(str, ...)  DbgPrint("[EXT4FSD][%s:%p] "##str, __FILE__, __LINE__,  __VA_ARGS__)
 #else
  #define dbg_print(...)

@@ -102,6 +102,13 @@ jbd2_revoke_table_free(
 	ExFreePoolWithTag(buf, JBD2_REVOKE_TABLE_TAG);
 }
 
+static jbd2_lbcb_t jbc2_lbcb_get(
+		jbd2_handle_t handle,
+		jbd2_fsblk_t blocknr)
+{
+
+}
+
 
  /**
   * @brief Verify JBD2 superblock.

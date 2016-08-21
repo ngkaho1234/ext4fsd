@@ -47,6 +47,7 @@ enum jbd2_node_type {
 struct jbd2_node_hdr {
 	enum jbd2_node_type	th_node_type;	/* Node type of entry */
 	jbd2_fsblk_t			th_block;		/* Block nr. of this block pointing to */
+	__bool				th_newly;		/* The entry is just newly allocated */
 };
 
 /**
