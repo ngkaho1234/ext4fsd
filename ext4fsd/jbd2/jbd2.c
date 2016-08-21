@@ -208,7 +208,7 @@ jbd2_revoke_entry_get(
 		return NULL;
 
 	re_tmp->re_header.th_block = blocknr;
-	re_tmp->re_header.th_node_type = JBD2_NODE_LBCB;
+	re_tmp->re_header.th_node_type = JBD2_NODE_REVOKE;
 	drv_atomic_init(&re_tmp->re_header.th_refcount, 0);
 	re_tmp->re_is_new = TRUE;
 
@@ -223,6 +223,35 @@ jbd2_revoke_entry_get(
 	}
 	/* Increment the reference count of the returned object */
 	drv_atomic_inc(&re_ret->re_header.th_refcount);
+	return re_ret;
+}
+
+/*
+ * @brief	Get and reference revoke entry from revoke entry table which
+ *		represents given @p blocknr.
+ * @param handle	Handle to journal file
+ * @param blocknr	Block number
+ * @return	an LBCB if it exists in the revoke entry table,
+ * 		otherwise NULL is returned
+ */
+static jbd2_revoke_entry_t *
+jbd2_revoke_entry_find(
+	jbd2_handle_t *handle,
+	jbd2_fsblk_t blocknr)
+{
+	jbd2_revoke_entry_t re_tmp, *re_ret;
+	re_tmp.re_header.th_block = blocknr;
+	re_tmp.re_header.th_node_type = JBD2_NODE_REVOKE;
+
+	re_ret = (jbd2_revoke_entry_t *)RB_FIND(
+								jbd2_generic_table,
+								&handle->jh_revoke_table,
+								&re_tmp.re_header);
+	if (re_ret) {
+		/* Increment the reference count of the returned object */
+		drv_atomic_inc(&re_ret->re_header.th_refcount);
+	}
+
 	return re_ret;
 }
 
@@ -543,7 +572,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		tag = (journal_block_tag_t *)tagp;
 
 		fs_blocknr = jbd2_tag_blocknr(handle, tag);
-		entry = jbd2_revoke_entry_get(handle, fs_blocknr);
+		entry = jbd2_revoke_entry_find(handle, fs_blocknr);
 		if (entry) {
 			re_tid = entry->re_tid;
 			jbd2_revoke_entry_put(handle, entry);
