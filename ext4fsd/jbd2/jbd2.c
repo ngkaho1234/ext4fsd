@@ -18,6 +18,7 @@ enum {
 struct recovery_info {
 	jbd2_tid_t	ri_start_txn;
 	jbd2_tid_t	ri_end_txn;
+
 	__bool		ri_has_txn;
 };
 
@@ -711,6 +712,10 @@ NTSTATUS jbd2_replay_one_pass(
 		__bool cc_ret, veri_ret;
 		journal_header_t *jh_buf;
 
+		if (phase != JBD2_PHASE_SCAN &&
+				jbd2_tid_cmp(curr_tid, recover_info->ri_end_txn) > 0)
+			break;
+
 		__try {
 			tmp.QuadPart = blocknr_to_offset(
 						curr_blocknr,
@@ -769,16 +774,18 @@ NTSTATUS jbd2_replay_one_pass(
 
 				break;
 			case JBD2_COMMIT_BLOCK:
-				curr_blocknr++;
 				if (phase == JBD2_PHASE_SCAN) {
 					recover_info->ri_end_txn = curr_tid;
 					recover_info->ri_has_txn = TRUE;
 				}
 				curr_tid++;
+				curr_blocknr++;
 				jbd2_wrap(handle, curr_blocknr);
 				break;
 			case JBD2_REVOKE_BLOCK:
-				jbd2_scan_revoke_entries(handle, curr_tid, jh_buf);
+				if (phase == JBD2_PHASE_SCAN_REVOKE)
+					jbd2_scan_revoke_entries(handle, curr_tid, jh_buf);
+
 				curr_blocknr++;
 				jbd2_wrap(handle, curr_blocknr);
 			}
