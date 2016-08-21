@@ -482,25 +482,28 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 
 	while (tagp - buf + tag_bytes <= blocksize) {
 		__bool cc_ret;
+		LARGE_INTEGER tmp;
 		jbd2_fsblk_t fs_blocknr;
 		journal_block_tag_t *tag;
+		void *from_bcb, *from_buf, *to_bcb, *to_buf;
 		tag = (journal_block_tag_t *)tagp;
 
 		fs_blocknr = jbd2_tag_blocknr(handle, tag);
 		/* XXX: We do not support multiple clients */
+		tmp.QuadPart = blocknr_to_offset(log_size, blocksize);
 		cc_ret = CcPinRead(
 				handle->jh_log_file,
 				&tmp,
 				handle->jh_blocksize,
 				PIN_WAIT,
-				&bcb,
-				&jh_buf);
+				&from_bcb,
+				&from_buf);
 		if (!cc_ret) {
 			status = STATUS_UNEXPECTED_IO_ERROR;
 			break;
 		}
 
-		CcUnpinData(bcb);
+		CcUnpinData(from_bcb);
 		if (jbd2_is_last_tag(handle, tag))
 			break;
 		tagp += jbd2_tag_size(handle, tag);
@@ -525,6 +528,7 @@ NTSTATUS jbd2_replay_one_pass(
 			struct recover_info *recover_info,
 			int phase)
 {
+	LARGE_INTEGER tmp;
 	NTSTATUS status = STATUS_SUCCESS;
 	jbd2_logblk_t curr_blocknr = be32_to_cpu(handle->jh_sb->s_start);
 	jbd2_tid_t curr_tid = be32_to_cpu(handle->jh_sb->s_sequence);
@@ -541,6 +545,7 @@ NTSTATUS jbd2_replay_one_pass(
 		journal_header_t *jh_buf;
 
 		__try {
+			tmp.QuadPart = blocknr_to_offset(log_size, blocksize);
 			cc_ret = CcPinRead(
 					handle->jh_log_file,
 					&tmp,
