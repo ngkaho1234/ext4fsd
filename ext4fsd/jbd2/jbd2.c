@@ -271,6 +271,17 @@ jbd2_revoke_entry_put(
 	}
 }
 
+static void
+jbd2_revoke_table_clear(jbd2_handle_t *handle)
+{
+	jbd2_revoke_entry_t *re, *tmp;
+	RB_FOREACH_SAFE(re,
+			jbd2_generic_table,
+			&handle->jh_revoke_table,
+			tmp) {
+		jbd2_revoke_entry_put(handle, re);
+	}
+}
 
 /**
  * @brief Helper to calculate CRC32 checksum
@@ -805,6 +816,30 @@ end:
  */
 NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
 {
+	struct recover_info recover_info;
+	NTSTATUS status = jbd2_replay_one_pass(
+					handle,
+					&recover_info,
+					JBD2_PHASE_SCAN);
+	if (!status)
+		goto cleanup;
+
+	status = jbd2_replay_one_pass(
+				handle,
+				&recover_info,
+				JBD2_PHASE_SCAN_REVOKE);
+	if (!status)
+		goto cleanup;
+
+	status = jbd2_replay_one_pass(
+				handle,
+				&recover_info,
+				JBD2_PHASE_REPLAY);
+	if (!status)
+		goto cleanup;
+cleanup:
+	// jbd2_revoke_table_clear(handle);
+	return status;
 }
 
 /**
