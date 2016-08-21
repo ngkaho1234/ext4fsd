@@ -28,7 +28,7 @@ struct recovery_info {
 #define jbd2_wrap(handle, var)							\
 do {													\
 	if (var > (handle)->jh_end)							\
-		var -= ((handle)->jh_end - (handle)->jh_first + 1);		\
+		var -= ((handle)->jh_end - (handle)->jh_start + 1);		\
 } while (0)
 
 /*
@@ -559,7 +559,7 @@ jbd2_tag_size(
 			sz += UUID_SIZE;
 	} else {
 		journal_block_tag_t *tag1;
-		tag1 = (journal_block_tag1_t *)tag;
+		tag1 = (journal_block_tag_t *)tag;
 
 		if (!(be16_to_cpu(tag1->t_flags) & JBD2_FLAG_SAME_UUID))
 			sz += UUID_SIZE;
@@ -576,7 +576,7 @@ jbd2_tag_size(
  */
 static __bool
 jbd2_test_flag(
-	bd2_handle_t *handle,
+	jbd2_handle_t *handle,
 	void *tag,
 	int flag)
 {
@@ -604,7 +604,7 @@ jbd2_test_flag(
  */
 static __u32
 jbd2_tag_csum(
-	bd2_handle_t *handle,
+	jbd2_handle_t *handle,
 	void *tag)
 {
 	__u32 csum = ~0;
@@ -676,7 +676,6 @@ jbd2_blocks_csum_verify(jbd2_handle_t *handle,
 		return STATUS_SUCCESS;
 
 	tagp = (char *)buf + sizeof(journal_header_t);
-	tag = (journal_block_tag_t *)tagp;
 
 	for (; tagp - buf + tag_bytes <= blocksize;
 			tagp += jbd2_tag_size(handle, tagp), nr++) {
@@ -863,7 +862,7 @@ jbd2_scan_revoke_entries(
 	size_t rcount;
 
 	if (jbd2_has_csum_v2or3(handle))
-		csum_size = sizeof(struct journal_revoke_tail);
+		csum_size = sizeof(journal_block_tail_t);
 
 	rcount = be32_to_cpu(revoke_hdr->r_count);
 
@@ -900,18 +899,18 @@ void jbd2_init()
 
 NTSTATUS jbd2_replay_one_pass(
 			jbd2_handle_t *handle,
-			struct recover_info *recover_info,
+			struct recovery_info *recovery_info,
 			int phase)
 {
 	LARGE_INTEGER tmp;
 	NTSTATUS status = STATUS_SUCCESS;
 	jbd2_logblk_t curr_blocknr = be32_to_cpu(handle->jh_sb->s_start);
 	jbd2_tid_t curr_tid = be32_to_cpu(handle->jh_sb->s_sequence);
-	RtlZeroMemory(recover_info, sizeof(struct recover_info));
+	RtlZeroMemory(recovery_info, sizeof(struct recovery_info));
 
 	if (phase == JBD2_PHASE_SCAN) {
-		recover_info->ri_start_txn = curr_tid;
-		recover_info->ri_has_txn = FALSE;
+		recovery_info->ri_start_txn = curr_tid;
+		recovery_info->ri_has_txn = FALSE;
 	}
 
 	while (1) {
@@ -920,10 +919,11 @@ NTSTATUS jbd2_replay_one_pass(
 		journal_header_t *jh_buf;
 
 		if (phase != JBD2_PHASE_SCAN &&
-				jbd2_tid_cmp(curr_tid, recover_info->ri_end_txn) > 0)
+				jbd2_tid_cmp(curr_tid, recovery_info->ri_end_txn) > 0)
 			break;
 
 		__try {
+			int nr_tags;
 			tmp.QuadPart = blocknr_to_offset(
 						curr_blocknr,
 						handle->jh_blocksize);
@@ -951,7 +951,6 @@ NTSTATUS jbd2_replay_one_pass(
 
 			switch (be32_to_cpu(jh_buf->h_blocktype)) {
 			case JBD2_DESCRIPTOR_BLOCK:
-				int nr_tags;
 				veri_ret = jbd2_verify_descr_block(handle, jh_buf);
 				if (!veri_ret) {
 					if (phase == JBD2_PHASE_SCAN)
@@ -967,7 +966,7 @@ NTSTATUS jbd2_replay_one_pass(
 					if (phase == JBD2_PHASE_SCAN) {
 						status = jbd2_blocks_csum_verify(
 									handle,
-									curr_block,
+									curr_blocknr,
 									jh_buf);
 						if (!NT_SUCCESS(status))
 							goto end;
@@ -1001,8 +1000,8 @@ NTSTATUS jbd2_replay_one_pass(
 				}
 
 				if (phase == JBD2_PHASE_SCAN) {
-					recover_info->ri_end_txn = curr_tid;
-					recover_info->ri_has_txn = TRUE;
+					recovery_info->ri_end_txn = curr_tid;
+					recovery_info->ri_has_txn = TRUE;
 				}
 				curr_tid++;
 				curr_blocknr++;
@@ -1041,24 +1040,24 @@ end:
  */
 NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
 {
-	struct recover_info recover_info;
+	struct recovery_info recovery_info;
 	NTSTATUS status = jbd2_replay_one_pass(
 					handle,
-					&recover_info,
+					&recovery_info,
 					JBD2_PHASE_SCAN);
 	if (!status)
 		goto cleanup;
 
 	status = jbd2_replay_one_pass(
 				handle,
-				&recover_info,
+				&recovery_info,
 				JBD2_PHASE_SCAN_REVOKE);
 	if (!status)
 		goto cleanup;
 
 	status = jbd2_replay_one_pass(
 				handle,
-				&recover_info,
+				&recovery_info,
 				JBD2_PHASE_REPLAY);
 	if (!status)
 		goto cleanup;
