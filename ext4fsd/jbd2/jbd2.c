@@ -627,6 +627,107 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 }
 
 /**
+ * @brief Verify checksum of the blocks mentioned in a descriptor block
+ * @param handle	Handle to journal file
+ * @param tid		Transaction ID the descriptor block belongs to
+ * @param blocknr	Block number of the descriptor block in log file
+ * @param buf		Descriptor block buffer
+ * @return	STATUS_SUCCESS indicating that the operation succeeds,
+ * 		otherwise the operation fails.
+ */
+static NTSTATUS
+jbd2_blocks_csum_verify(jbd2_handle_t *handle,
+			jbd2_tid_t tid,
+			jbd2_logblk_t blocknr,
+			void *buf)
+{
+	char *tagp;
+	jbd2_logblk_t nr = 1;
+	NTSTATUS status = STATUS_SUCCESS;
+	int blocksize = handle->jh_blocksize;
+	int tag_bytes = jbd2_min_tag_size(handle);
+
+	if (jbd2_has_csum_v2or3(handle))
+		blocksize -= sizeof(journal_block_tail_t);
+
+	tagp = (char *)buf + sizeof(journal_header_t);
+	tag = (journal_block_tag_t *)tagp;
+
+	for (; tagp - buf + tag_bytes <= blocksize;
+			tagp += jbd2_tag_size(handle, tagp), nr++) {
+		__bool cc_ret;
+		jbd2_tid_t re_tid;
+		LARGE_INTEGER tmp;
+		journal_block_tag_t *tag;
+		jbd2_fsblk_t fs_blocknr;
+		jbd2_revoke_entry_t *entry;
+		void *from_bcb, *from_buf, *to_bcb, *to_buf;
+		tag = (journal_block_tag_t *)tagp;
+
+		fs_blocknr = jbd2_tag_blocknr(handle, tag);
+		entry = jbd2_revoke_entry_find(handle, fs_blocknr);
+		if (entry) {
+			re_tid = entry->re_tid;
+			jbd2_revoke_entry_put(handle, entry);
+			if (jbd2_tid_cmp(tid, re_tid) <= 0)
+				continue;
+		}
+
+		/*
+		 * XXX:	We do not support multiple clients, since
+		 *	as of linux 4.x multiple clients support isn't
+		 *	available
+		 */
+		tmp.QuadPart = blocknr_to_offset(
+					blocknr + nr,
+					handle->jh_blocksize);
+		cc_ret = CcPinRead(
+				handle->jh_log_file,
+				&tmp,
+				handle->jh_blocksize,
+				PIN_WAIT,
+				&from_bcb,
+				&from_buf);
+		if (!cc_ret) {
+			status = STATUS_UNEXPECTED_IO_ERROR;
+			break;
+		}
+
+		tmp.QuadPart = blocknr_to_offset(
+					fs_blocknr,
+					handle->jh_blocksize);
+		cc_ret = CcPreparePinWrite(
+					handle->jh_client_file,
+					&tmp,
+					handle->jh_blocksize,
+					TRUE,
+					PIN_WAIT,
+					&to_bcb,
+					&to_buf);
+		if (!cc_ret) {
+			status = STATUS_UNEXPECTED_IO_ERROR;
+			CcUnpinData(from_bcb);
+			break;
+		}
+
+		RtlCopyMemory(to_buf, from_buf, handle->jh_blocksize);
+		if (jbd2_test_flag(handle, tag, JBD2_FLAG_ESCAPE)) {
+			journal_header_t *jh_buf = to_buf;
+			jh_buf->h_magic = cpu_to_be32(JBD2_MAGIC_NUMBER);
+		}
+		CcSetDirtyPinnedData(to_bcb, NULL);
+
+		CcUnpinData(from_bcb);
+		CcUnpinData(to_bcb);
+
+		if (jbd2_test_flag(handle, tag, JBD2_FLAG_LAST_TAG))
+			break;
+	}
+
+	return status;
+}
+
+/**
  * @brief Replay the blocks mentioned in a descriptor block
  * @param handle	Handle to journal file
  * @param tid		Transaction ID the descriptor block belongs to
