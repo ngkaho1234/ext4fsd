@@ -5,14 +5,37 @@
 #include "jbd2\jbd2.h"
 
  /**
+  * @details	Maintain information about the progress of the recovery job, so that
+  *			the different passes can carry information between them.
+  * @remarks	Copied from e2fsprogs/e2fsck/recovery.c
+  */
+struct recovery_info {
+	jbd2_tid_t	ri_start_txn;
+	jbd2_tid_t	ri_end_txn;
+
+	int		ri_nr_replays;
+	int		ri_nr_revokes;
+	int		ri_nr_revoke_hits;
+};
+
+/*
+ * Make sure we wrap around the log correctly
+ */
+#define jbd2_wrap(handle, var)							\
+do {													\
+	if (var > (handle)->jh_end)							\
+		var -= ((handle)->jh_end - (handle)->jh_first + 1);		\
+} while (0)
+
+ /**
   * @brief Cache manager callbacks used by JBD2 driver
   */
 CACHE_MANAGER_CALLBACKS jbd2_cc_manager_callbacks;
 
 /**
  * @brief Node comparsion routine for all table
- * @param a		A pointer to the first item to be compared
- * @param b		A pointer to the second item to be compared
+ * @param a	A pointer to the first item to be compared
+ * @param b	A pointer to the second item to be compared
  * @return	-1 if index of @p a < index of @p b,
  *			1 if index of @p a > index of @p b,
  *			or 0 if index of @p a == index of @p b.
@@ -99,6 +122,8 @@ jbc2_lbcb_get(
 	lbcb_tmp->jl_header.th_block = blocknr;
 	lbcb_tmp->jl_header.th_node_type = JBD2_NODE_LBCB;
 	drv_atomic_init(&lbcb_tmp->jl_header.th_refcount, 0);
+	lbcb_tmp->jl_is_new = TRUE;
+
 	lbcb_ret = (jbd2_lbcb_t *)RB_INSERT(
 							jbd2_generic_table,
 							&handle->jh_lbcb_table,
@@ -106,6 +131,7 @@ jbc2_lbcb_get(
 	if (lbcb_ret != lbcb_tmp) {
 		/* If there's already an existing node, free the temporary node */
 		jbd2_lbcb_free(handle, lbcb_tmp);
+		lbcb_ret->jl_is_new = FALSE;
 	}
 	/* Increment the reference count of the returned object */
 	drv_atomic_inc(&lbcb_ret->jl_header.th_refcount);
@@ -140,6 +166,8 @@ jbc2_revoke_entry_get(
 	re_tmp->re_header.th_block = blocknr;
 	re_tmp->re_header.th_node_type = JBD2_NODE_LBCB;
 	drv_atomic_init(&re_tmp->re_header.th_refcount, 0);
+	re_tmp->re_is_new = TRUE;
+
 	re_ret = (jbd2_revoke_entry_t *)RB_INSERT(
 								jbd2_generic_table,
 								&handle->jh_revoke_table,
@@ -147,6 +175,7 @@ jbc2_revoke_entry_get(
 	if (re_ret != re_tmp) {
 		/* If there's already an existing node, free the temporary node */
 		jbd2_revoke_entry_free(handle, re_tmp);
+		re_ret->re_is_new = FALSE;
 	}
 	/* Increment the reference count of the returned object */
 	drv_atomic_inc(&re_ret->re_header.th_refcount);
@@ -196,6 +225,64 @@ static __bool jbd2_verify_superblock(journal_superblock_t *sb)
 static __bool jbd2_features_supported(__be32 features, __u32 mask)
 {
 	return !(be32_to_cpu(features) & ~mask);
+}
+
+/*
+ * @brief		Count the number of in-use tags in a journal descriptor block.
+ * @remarks	Copied from e2fsprogs/lib/ext2fs/kernel-jbd.h
+ * @param handle	Handle to journal file
+ * @return size of a block tag in bytes
+ */
+size_t jbd2_journal_tag_bytes(jbd2_handle_t *handle)
+{
+	size_t sz;
+
+	if (jbd2_has_feature_csum3(handle))
+		return sizeof(journal_block_tag3_t);
+
+	sz = sizeof(journal_block_tag_t);
+
+	if (jbd2_has_feature_csum2(handle))
+		sz += sizeof(__u16);
+
+	if (jbd2_has_feature_64bit(handle))
+		return sz;
+
+	return sz - sizeof(__u32);
+}
+
+/*
+ * @brief Count the number of in-use tags in a journal descriptor block.
+ * @remarks	Copied from e2fsprogs/e2fsck/recovery.c
+ * @param handle	Handle to journal file
+ * @param buf		Block buffer
+ * @return nr. of tags in a descriptor block
+ */
+static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
+{
+	char *				tagp;
+	journal_block_tag_t *	tag;
+	int			nr = 0, size = handle->jh_blocksize;
+	int			tag_bytes = jbd2_journal_tag_bytes(handle);
+
+	if (jbd2_has_csum_v2or3(handle))
+		size -= sizeof(journal_block_tail_t);
+
+	tagp = (char *)buf + sizeof(journal_header_t);
+
+	while ((tagp - buf + tag_bytes) <= size) {
+		tag = (journal_block_tag_t *)tagp;
+
+		nr++;
+		tagp += tag_bytes;
+		if (!(tag->t_flags & cpu_to_be16(JBD2_FLAG_SAME_UUID)))
+			tagp += 16;
+
+		if (tag->t_flags & cpu_to_be16(JBD2_FLAG_LAST_TAG))
+			break;
+	}
+
+	return nr;
 }
 
 /**
@@ -349,6 +436,10 @@ NTSTATUS jbd2_open_handle(
 		handle->jh_max_txn = be32_to_cpu(handle->jh_sb->s_max_transaction);
 		handle->jh_running_txn = NULL;
 		InitializeListHead(&handle->jh_txn_queue);
+
+		/* Calculate the head, tail of logging area in journal */
+		handle->jh_start = be32_to_cpu(handle->jh_sb->s_first);
+		handle->jh_end = handle->jh_blockcnt - 1;
 
 		/* Calculate the head, tail and nr. of blocks of free area in journal */
 		handle->jh_free_start = be32_to_cpu(handle->jh_sb->s_first);

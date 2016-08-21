@@ -61,7 +61,7 @@ typedef struct journal_header_s
  *
  * Checksum v1, v2, and v3 are mutually exclusive features.
  */
-struct commit_header {
+typedef struct journal_commit_header {
 	journal_header_t	h_header;
 	__u8				h_chksum_type;
 	__u8				h_chksum_size;
@@ -69,7 +69,7 @@ struct commit_header {
 	__be32			h_chksum[JBD2_CHECKSUM_BYTES];
 	__be64			h_commit_sec;
 	__be32			h_commit_nsec;
-};
+} journal_commit_header_t;
 
 /**
  * @brief The block tag
@@ -96,9 +96,9 @@ typedef struct journal_block_tag_s {
 /**
  * @brief Tail of descriptor or revoke block, for checksumming
  */
-struct jbd2_journal_block_tail {
+typedef struct journal_block_tail {
 	__be32		t_checksum;		/* crc32c(uuid+descr_block) */
-};
+} journal_block_tail_t;
 
 /*
  * @brief The revoke descriptor
@@ -106,10 +106,10 @@ struct jbd2_journal_block_tail {
  * used on disk to describe a series of blocks to
  * be revoked from the log
  */
-typedef struct jbd2_journal_revoke_header_s {
+typedef struct journal_revoke_header_s {
 	journal_header_t	r_header;
 	__be32			r_count;	/* Count of bytes used in the block */
-} jbd2_journal_revoke_header_t;
+} journal_revoke_header_t;
 
 /* Definitions for the journal tag flags word: */
 #define JBD2_FLAG_ESCAPE		1	/* on-disk block is escaped */

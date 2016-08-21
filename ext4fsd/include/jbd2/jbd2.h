@@ -60,6 +60,7 @@ struct jbd2_node_hdr {
  */
 typedef struct jbd2_lbcb {
 	struct jbd2_node_hdr	jl_header;			/* Node header of LBCB */
+	__bool				jl_is_new;			/* Whether the lbcb is new or not */
 	void *				jl_bcb;			/* The bcb to be logged */
 	void *				jl_data;			/* Data field of bcb logged */
 
@@ -81,6 +82,7 @@ typedef struct jbd2_lbcb {
  */
 typedef struct jbd2_revoke_entry {
 	struct jbd2_node_hdr	re_header;		/* Node header of LBCB */
+	__bool				re_is_new;		/* Whether the revoke entry is new or not */
 	jbd2_tid_t				re_tid;			/*
 										 * For any transaction id smaller
 										 * than trans_id, records of @block
@@ -134,6 +136,9 @@ typedef struct jbd2_handle {
 
 	jbd2_txn_t *			jh_running_txn;	/* Current running transaction */
 	LIST_ENTRY			jh_txn_queue;		/* A queue of transaction committed */
+
+	jbd2_logblk_t			jh_start;			/* Start of logging area of journal */
+	jbd2_logblk_t			jh_end;			/* End of logging area of journal */
 
 	jbd2_logblk_t			jh_free_start;		/* Start of unused blocknr of journal */
 	jbd2_logblk_t			jh_free_end;		/* End of unused blocknr of journal */
