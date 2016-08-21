@@ -12,7 +12,7 @@
 /*
  * Descriptor block types:
  */
-#define JBD2_DESCRIPTOR_BLOCK	1
+#define JBD2_DESCRIPTOR_BLOCK		1
 #define JBD2_COMMIT_BLOCK		2
 #define JBD2_SUPERBLOCK_V1		3
 #define JBD2_SUPERBLOCK_V2		4

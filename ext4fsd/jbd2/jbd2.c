@@ -18,12 +18,7 @@ enum {
 struct recovery_info {
 	jbd2_tid_t	ri_start_txn;
 	jbd2_tid_t	ri_end_txn;
-
-	jbd2_logblk_t	ri_start_blocknr;
-	jbd2_logblk_t	ri_end_blocknr;
-
-	int		ri_nr_replays;
-	int		ri_nr_revokes;
+	__bool		ri_has_txn;
 };
 
 /*
@@ -317,11 +312,29 @@ jbd2_chksum(
 	return jbd2_crc32c(crc, buf, bufsz);
 }
 
- /**
-  * @brief Verify JBD2 superblock.
-  * @param sb	JBD2 superblock
-  * @return TRUE if JBD2 superblock is valid, otherwise FALSE
-  */
+/**
+ * @brief Verify JBD2 metadata block.
+ * @param hdr	JBD2 metadata block header
+ * @return TRUE if JBD2 metadata block is valid, otherwise FALSE
+ */
+static __bool jbd2_verify_metadata_block(journal_header_t *hdr)
+{
+	if (be32_to_cpu(hdr->h_magic) != JBD2_MAGIC_NUMBER)
+		return FALSE;
+
+	/* We support h_blocktype from 1 to 5 */
+	if (!be32_to_cpu(hdr->h_blocktype)
+			|| be32_to_cpu(hdr->h_blocktype) > JBD2_REVOKE_BLOCK)
+		return FALSE;
+
+	return TRUE;
+}
+
+/**
+ * @brief Verify JBD2 superblock.
+ * @param sb	JBD2 superblock
+ * @return TRUE if JBD2 superblock is valid, otherwise FALSE
+ */
 static __bool jbd2_verify_superblock(journal_superblock_t *sb)
 {
 	journal_header_t *hdr = &sb->s_header;
@@ -690,7 +703,7 @@ NTSTATUS jbd2_replay_one_pass(
 
 	if (phase == JBD2_PHASE_SCAN) {
 		recover_info->ri_start_txn = curr_tid;
-		recover_info->ri_start_blocknr = curr_blocknr;
+		recover_info->ri_has_txn = FALSE;
 	}
 
 	while (1) {
@@ -714,7 +727,8 @@ NTSTATUS jbd2_replay_one_pass(
 				goto end;
 			}
 
-			if (be32_to_cpu(jh_buf->h_sequence) != curr_tid) {
+			if (!jbd2_verify_metadata_block(jh_buf)
+					|| be32_to_cpu(jh_buf->h_sequence) != curr_tid) {
 				if (phase == JBD2_PHASE_SCAN)
 					status = STATUS_SUCCESS;
 				else
@@ -756,12 +770,15 @@ NTSTATUS jbd2_replay_one_pass(
 				break;
 			case JBD2_COMMIT_BLOCK:
 				curr_blocknr++;
+				if (phase == JBD2_PHASE_SCAN) {
+					recover_info->ri_end_txn = curr_tid;
+					recover_info->ri_has_txn = TRUE;
+				}
 				curr_tid++;
 				jbd2_wrap(handle, curr_blocknr);
 				break;
 			case JBD2_REVOKE_BLOCK:
-				journal_revoke_header_t *revoke_header;
-				revoke_header = (journal_revoke_header_t *)jh_buf;
+				jbd2_scan_revoke_entries(handle, curr_tid, jh_buf);
 				curr_blocknr++;
 				jbd2_wrap(handle, curr_blocknr);
 			}
@@ -771,9 +788,6 @@ NTSTATUS jbd2_replay_one_pass(
 		}
 	}
 end:
-	if (NT_SUCCESS(status) && phase == JBD2_PHASE_SCAN) {
-
-	}
 	return status;
 }
 
