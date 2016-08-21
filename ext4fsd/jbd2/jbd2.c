@@ -491,7 +491,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		cc_ret = CcPinRead(
 				handle->jh_log_file,
 				&tmp,
-				handle->blocksize,
+				handle->jh_blocksize,
 				PIN_WAIT,
 				&bcb,
 				&jh_buf);
