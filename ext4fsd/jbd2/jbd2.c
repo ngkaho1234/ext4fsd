@@ -433,7 +433,9 @@ NTSTATUS jbd2_replay_one_pass(
 			}
 
 			switch (be32_to_cpu(jh_buf->h_blocktype)) {
-
+			case JBD2_DESCRIPTOR_BLOCK:
+			case JBD2_COMMIT_BLOCK:
+			case JBD2_REVOKE_BLOCK:
 			}
 		}
 		status = STATUS_SUCCESS;
