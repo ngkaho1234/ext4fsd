@@ -722,28 +722,38 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 	return status;
 }
 
+/**
+ * @brief	Scan revoke entries in a revocation block and
+ *		insert them into revoke table
+ * @param handle	Handle to journal file
+ * @param tid		Transaction ID
+ * @param buf		Block buffer
+ * @return STATUS_SUCCESS if all the revoke entries are inserted
+ */
 static NTSTATUS
 jbd2_scan_revoke_entries(
 		jbd2_handle_t *handle,
 		jbd2_tid_t tid,
-		journal_header_t *jh_buf)
+		void *buf)
 {
 	size_t entry_sz = jbd2_revoke_entry_size(handle);
 	size_t csum_size = 0;
-	char *bufp = (char *)jh_buf;
+	char *bufp = (char *)buf;
+	journal_revoke_header_t *revoke_hdr =
+			(journal_revoke_header_t *)buf;
 	size_t rcount;
 
 	if (jbd2_has_csum_v2or3(handle))
 		csum_size = sizeof(struct journal_revoke_tail);
 
-	rcount = be32_to_cpu(jh_buf->r_count);
+	rcount = be32_to_cpu(revoke_hdr->r_count);
 
 	/* Check for corrupted revocation block */
 	if (rcount > handle->jh_blocksize - csum_size)
 		return STATUS_DISK_CORRUPT_ERROR;
 
 	for (bufp += sizeof(journal_header_t);
-			bufp + entry_sz <= jh_buf + rcount;
+			bufp + entry_sz <= (char *)buf + rcount;
 			bufp += entry_sz) {
 		jbd2_fsblk_t fs_blocknr = jbd2_revoke_entry_blocknr(bufp);
 		jbd2_revoke_entry_t *revoke_entry;
