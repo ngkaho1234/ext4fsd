@@ -484,7 +484,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		cc_ret = CcPinRead(
 				handle->jh_log_file,
 				&tmp,
-				handle->jh_blocksize,
+				handle->blocksize,
 				PIN_WAIT,
 				&bcb,
 				&jh_buf);
@@ -621,7 +621,7 @@ NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
  * @param client_file		FILE_OBJECT of client file
  * @param log_file		FILE_OBJECT of journal file
  * @param log_size		Size of journal file in bytes
- * @param block_size	Block size (must match the block size of client)
+ * @param blocksize	Block size (must match the block size of client)
  * @param handle_ret	New handle returned if the journal file is successfully
  *					opened
  * @return	STATUS_SUCCESS if we successfully open a journal file, 
@@ -635,7 +635,7 @@ NTSTATUS jbd2_open_handle(
 				PFILE_OBJECT client_file,
 				PFILE_OBJECT log_file,
 				__s64 log_size,
-				unsigned int block_size,
+				unsigned int blocksize,
 				jbd2_handle_t **handle_ret)
 {
 	void *bcb = NULL;
@@ -667,11 +667,11 @@ NTSTATUS jbd2_open_handle(
 		NULL);
 
 	__try {
-		tmp.QuadPart = blocknr_to_offset(log_size, block_size);
+		tmp.QuadPart = blocknr_to_offset(log_size, blocksize);
 		cc_ret = CcPinRead(
 					log_file,
 					&tmp,
-					block_size,
+					blocksize,
 					PIN_WAIT,
 					&bcb,
 					&sb_buf);
@@ -683,12 +683,12 @@ NTSTATUS jbd2_open_handle(
 			status = STATUS_DISK_CORRUPT_ERROR;
 			__leave;
 		}
-		if (be32_to_cpu(sb_buf->s_blocksize) != block_size) {
+		if (be32_to_cpu(sb_buf->s_blocksize) != blocksize) {
 			status = STATUS_DISK_CORRUPT_ERROR;
 			__leave;
 		}
 		if (be32_to_cpu(sb_buf->s_maxlen) <
-			offset_to_blocknr(log_size, block_size)) {
+			offset_to_blocknr(log_size, blocksize)) {
 
 			status = STATUS_DISK_CORRUPT_ERROR;
 			__leave;
@@ -743,7 +743,7 @@ NTSTATUS jbd2_open_handle(
 		handle->jh_log_file = log_file;
 		handle->jh_client_file = client_file;
 		drv_mutex_init(&handle->jh_lock);
-		handle->jh_blocksize = block_size;
+		handle->jh_blocksize = blocksize;
 		handle->jh_blockcnt = be32_to_cpu(handle->jh_sb->s_maxlen);
 		RtlCopyMemory(handle->jh_uuid, handle->jh_sb, UUID_SIZE);
 		handle->jh_max_txn = be32_to_cpu(handle->jh_sb->s_max_transaction);
