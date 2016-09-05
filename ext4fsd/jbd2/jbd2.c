@@ -226,6 +226,36 @@ jbd2_revoke_entry_put(
 }
 
 
+/**
+ * @brief Helper to calculate CRC32 checksum
+ * @param buf	Buffer
+ * @param bufsz	Size of buffer
+ * @return CRC32 checksum of the buffer
+ */
+static __u32 jbd2_crc32(__u32 crc, void *buf, size_t bufsz)
+{
+	/*
+	 * ngkaho1234:	Not sure whether crc32/crc32c helpers
+	 * 		are provided by NT kernel...
+	 */
+	return drv_crc32(crc, buf, bufsz);
+}
+
+/**
+ * @brief Helper to calculate CRC32C checksum
+ * @param buf	Buffer
+ * @param bufsz	Size of buffer
+ * @return CRC32C checksum of the buffer
+ */
+static __u32 jbd2_crc32c(__u32 crc, void *buf, size_t bufsz)
+{
+	/*
+	 * ngkaho1234:	Not sure whether crc32/crc32c helpers
+	 * 		are provided by NT kernel...
+	 */
+	return drv_crc32c(crc, buf, bufsz);
+}
+
  /**
   * @brief Verify JBD2 superblock.
   * @param sb	JBD2 superblock
