@@ -4,6 +4,12 @@
 
 #include "jbd2\jbd2.h"
 
+enum {
+	JBD2_PHASE_SCAN,
+	JBD2_PHASE_SCAN_REVOKE,
+	JBD2_PHASE_REPLAY
+};
+
  /**
   * @details	Maintain information about the progress of the recovery job, so that
   *			the different passes can carry information between them.
@@ -15,7 +21,6 @@ struct recovery_info {
 
 	int		ri_nr_replays;
 	int		ri_nr_revokes;
-	int		ri_nr_revoke_hits;
 };
 
 /*
@@ -314,6 +319,16 @@ static int jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
 	return provided == cpu_to_be32(calculated);
 }
 
+static int jbd2_verify_descr_block(
+			jbd2_handle_t *handle,
+			journal_header_t *jh_buf)
+{
+	if (be32_to_cpu(hdr->h_magic) != JBD2_MAGIC_NUMBER)
+		return FALSE;
+
+	return jbd2_descr_block_csum_verify(handle, jh_buf);
+}
+
 /*
  * @brief		Count the number of in-use tags in a journal descriptor block.
  * @remarks	Copied from e2fsprogs/lib/ext2fs/kernel-jbd.h
@@ -383,6 +398,49 @@ void jbd2_init()
 	jbd2_cc_manager_callbacks.ReleaseFromReadAhead = jbd2_cc_release_from_readahead;
 }
 
+NTSTATUS jbd2_replay_one_pass(
+			jbd2_handle_t *handle,
+			struct recover_info *recover_info,
+			int phase)
+{
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	jbd2_logblk_t curr_blocknr = be32_to_cpu(handle->jh_sb->s_start);
+	jbd2_tid_t curr_tid = be32_to_cpu(handle->jh_sb->s_sequence);
+	RtlZeroMemory(recover_info, sizeof(struct recover_info));
+
+	__try {
+		while (1) {
+			void *bcb;
+			BOOLEAN cc_ret;
+			journal_header_t *jh_buf;
+			cc_ret = CcPinRead(
+					log_file,
+					&tmp,
+					block_size,
+					PIN_WAIT,
+					&bcb,
+					&jh_buf);
+			if (!cc_ret) {
+				status = STATUS_UNEXPECTED_IO_ERROR;
+				__leave;
+			}
+
+			if (be32_to_cpu(jh_buf->h_sequence) != curr_tid) {
+				status = STATUS_SUCCESS;
+				__leave;
+			}
+
+			switch (be32_to_cpu(jh_buf->h_blocktype)) {
+
+			}
+		}
+		status = STATUS_SUCCESS;
+	} __finally {
+
+	}
+	return status;
+}
+
 /**
  * @brief Replay a journal file
  * @param handle Handle to journal file
@@ -390,7 +448,6 @@ void jbd2_init()
  */
 NTSTATUS jbd2_replay_journal(jbd2_handle_t *handle)
 {
-
 }
 
 /**
