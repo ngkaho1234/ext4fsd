@@ -9,6 +9,7 @@
 #include "drv_common\drv_types.h"
 #include "drv_common\drv_atomic.h"
 #include "drv_common\drv_lock.h"
+#include "drv_common\drv_crc32.h"
 
 static __inline __u64 bcb_blocknr(void *bcb)
 {
