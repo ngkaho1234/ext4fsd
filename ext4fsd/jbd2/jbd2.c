@@ -256,6 +256,15 @@ static __u32 jbd2_crc32c(__u32 crc, void *buf, size_t bufsz)
 	return drv_crc32c(crc, buf, bufsz);
 }
 
+static inline __u32 jbd2_chksum(journal_handle_t *handle
+				__u32 crc,
+				const void *buf,
+				size_t bufsz)
+{
+	UNUSED_PARAMETER(handle);
+	return jbd2_crc32c(crc, buf, bufsz);
+}
+
  /**
   * @brief Verify JBD2 superblock.
   * @param sb	JBD2 superblock
@@ -283,6 +292,26 @@ static __bool jbd2_verify_superblock(journal_superblock_t *sb)
 static __bool jbd2_features_supported(__be32 features, __u32 mask)
 {
 	return !(be32_to_cpu(features) & ~mask);
+}
+
+static int jbd2_descr_block_csum_verify(jbd2_handle_t *handle,
+					void *buf)
+{
+	journal_block_tail_t *tail;
+	__u32 provided;
+	__u32 calculated;
+
+	if (!jbd2_has_csum_v2or3(handle))
+		return 1;
+
+	tail = (journal_block_tail_t *)((char *)buf + handle->jh_blocksize -
+			sizeof(journal_block_tail_t));
+	provided = tail->t_checksum;
+	tail->t_checksum = 0;
+	calculated = jbd2_chksum(handle, handle->jh_csum_seed, buf, handle->jh_blocksize);
+	tail->t_checksum = provided;
+
+	return provided == cpu_to_be32(calculated);
 }
 
 /*

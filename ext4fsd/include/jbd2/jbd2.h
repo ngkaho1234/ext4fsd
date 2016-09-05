@@ -127,6 +127,8 @@ typedef RB_HEAD(jbd2_generic_table, jbd2_node_hdr) jbd2_generic_table_t;
 typedef struct jbd2_handle {
 	PFILE_OBJECT			jh_log_file;		/* Log file handle */
 
+	__u32				jh_csum_seed;		/* Pre-calculated seed for checksumming */
+
 	drv_mutex_t			jh_lock;			/* Lock of the handle */
 
 	__u32				jh_blocksize;		/* Block size of log file */
