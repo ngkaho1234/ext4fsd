@@ -256,12 +256,13 @@ static __u32 jbd2_crc32c(__u32 crc, void *buf, size_t bufsz)
 	return drv_crc32c(crc, buf, bufsz);
 }
 
-static inline __u32 jbd2_chksum(journal_handle_t *handle
-				__u32 crc,
-				const void *buf,
-				size_t bufsz)
+static inline __u32 jbd2_chksum(
+					jbd2_handle_t *handle,
+					__u32 crc,
+					const void *buf,
+					size_t bufsz)
 {
-	UNUSED_PARAMETER(handle);
+	UNREFERENCED_PARAMETER(handle);
 	return jbd2_crc32c(crc, buf, bufsz);
 }
 
