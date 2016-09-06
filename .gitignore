@@ -1,6 +1,7 @@
-ARM/
+ARM
 ext4fsd/ARM
-x64/
+x64
 ext4fsd/x64
-x86/
+x86
 ext4fsd/x86
+.vs
