@@ -514,7 +514,11 @@ NTSTATUS jbd2_replay_one_pass(
 					__leave;
 				}
 
-				nr_tags = jbd2_count_tags(handle, jh_buf);
+				if (phase != JBD2_PHASE_REPLAY) {
+					nr_tags = jbd2_count_tags(handle, jh_buf);
+					curr_blocknr += nr_tags + 1;
+					break;
+				}
 			case JBD2_COMMIT_BLOCK:
 			case JBD2_REVOKE_BLOCK:
 			}
