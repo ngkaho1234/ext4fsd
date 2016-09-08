@@ -336,12 +336,12 @@ static __bool jbd2_verify_descr_block(
 }
 
 /*
- * @brief		Count the number of in-use tags in a journal descriptor block.
+ * @brief	Calculate the minimal size of a block tag
  * @remarks	Copied from e2fsprogs/lib/ext2fs/kernel-jbd.h
  * @param handle	Handle to journal file
- * @return size of a block tag in bytes
+ * @return minimal size of a block tag in bytes
  */
-size_t jbd2_journal_tag_bytes(jbd2_handle_t *handle)
+size_t jbd2_min_tag_size(jbd2_handle_t *handle)
 {
 	size_t sz;
 
@@ -359,35 +359,76 @@ size_t jbd2_journal_tag_bytes(jbd2_handle_t *handle)
 	return sz - sizeof(__u32);
 }
 
+static jbd2_fsblk_t
+jbd2_tag_blocknr(jbd2_handle_t *handle, journal_block_tag_t *tag)
+{
+	jbd2_fsblk_t blocknr = 0;
+	blocknr = be32_to_cpu(tag->t_blocknr);
+	if (jbd2_has_feature_64bit(handle))
+		blocknr |= be32_to_cpu(tag->t_blocknr_high);
+
+	return blocknr;
+}
+
+static size_t
+jbd2_tag_size(
+	jbd2_handle_t *handle,
+	journal_block_tag_t *tag)
+{
+	size_t sz = jbd2_min_tag_size(handle);
+	if (jbd2_has_feature_csum3(handle)) {
+		journal_block_tag3_t *tag3;
+		tag3 = (journal_block_tag3_t *)tag;
+
+		if (!(be32_to_cpu(tag->t_flags) & JBD2_FLAG_SAME_UUID))
+			sz += UUID_SIZE;
+	} else {
+		if (!(be16_to_cpu(tag->t_flags) & JBD2_FLAG_SAME_UUID))
+			sz += UUID_SIZE;
+	}
+	return sz;
+}
+
 /*
  * @brief Count the number of in-use tags in a journal descriptor block.
- * @remarks	Copied from e2fsprogs/e2fsck/recovery.c
  * @param handle	Handle to journal file
  * @param buf		Block buffer
  * @return nr. of tags in a descriptor block
  */
 static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 {
-	char *				tagp;
-	journal_block_tag_t *	tag;
-	int			nr = 0, size = handle->jh_blocksize;
-	int			tag_bytes = jbd2_journal_tag_bytes(handle);
+	char *tagp;
+	int nr = 0;
+	int blocksize = handle->jh_blocksize;
+	int tag_bytes = jbd2_min_tag_size(handle);
 
 	if (jbd2_has_csum_v2or3(handle))
-		size -= sizeof(journal_block_tail_t);
+		blocksize -= sizeof(journal_block_tail_t);
 
 	tagp = (char *)buf + sizeof(journal_header_t);
 
-	while ((tagp - buf + tag_bytes) <= size) {
+	while ((tagp - buf + tag_bytes) <= blocksize) {
+		journal_block_tag_t *tag;
 		tag = (journal_block_tag_t *)tagp;
 
 		nr++;
 		tagp += tag_bytes;
-		if (!(tag->t_flags & cpu_to_be16(JBD2_FLAG_SAME_UUID)))
-			tagp += 16;
+		if (jbd2_has_feature_csum3(handle)) {
+			journal_block_tag3_t *tag3;
+			tag3 = (journal_block_tag3_t *)tag;
 
-		if (tag->t_flags & cpu_to_be16(JBD2_FLAG_LAST_TAG))
-			break;
+			if (!(be32_to_cpu(tag3->t_flags) & JBD2_FLAG_SAME_UUID))
+				tagp += UUID_SIZE;
+
+			if (be32_to_cpu(tag3->t_flags) & JBD2_FLAG_LAST_TAG)
+				break;
+		} else {
+			if (!(be16_to_cpu(tag->t_flags) & JBD2_FLAG_SAME_UUID))
+				tagp += UUID_SIZE;
+
+			if (be16_to_cpu(tag->t_flags) & JBD2_FLAG_LAST_TAG)
+				break;
+		}
 	}
 
 	return nr;
@@ -447,6 +488,7 @@ NTSTATUS jbd2_replay_one_pass(
 
 			switch (be32_to_cpu(jh_buf->h_blocktype)) {
 			case JBD2_DESCRIPTOR_BLOCK:
+				int nr_tags;
 				veri_ret = jbd2_verify_descr_block(handle, jh_buf);
 				if (!veri_ret) {
 					if (phase == JBD2_PHASE_SCAN)
@@ -456,6 +498,7 @@ NTSTATUS jbd2_replay_one_pass(
 					__leave;
 				}
 
+				nr_tags = jbd2_count_tags(handle, jh_buf);
 			case JBD2_COMMIT_BLOCK:
 			case JBD2_REVOKE_BLOCK:
 			}
