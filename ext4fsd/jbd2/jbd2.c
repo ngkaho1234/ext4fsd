@@ -359,6 +359,12 @@ size_t jbd2_min_tag_size(jbd2_handle_t *handle)
 	return sz - sizeof(__u32);
 }
 
+/**
+ * @brief Extract blocknr from block tag
+ * @param handle	Handle to journal file
+ * @param tag		Block tag
+ * @return blocknr
+ */
 static jbd2_fsblk_t
 jbd2_tag_blocknr(jbd2_handle_t *handle, journal_block_tag_t *tag)
 {
@@ -370,6 +376,12 @@ jbd2_tag_blocknr(jbd2_handle_t *handle, journal_block_tag_t *tag)
 	return blocknr;
 }
 
+/*
+ * @brief	Calculate the size of a block tag
+ * @param handle	Handle to journal file
+ * @param tag		Block tag
+ * @return size of a block tag in bytes
+ */
 static size_t
 jbd2_tag_size(
 	jbd2_handle_t *handle,
