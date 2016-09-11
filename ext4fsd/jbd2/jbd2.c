@@ -401,6 +401,13 @@ jbd2_tag_size(
 	return sz;
 }
 
+/**
+ * @brief Check if the block tag is the last tag in the descriptor block
+ * @param handle	Handle to journal file
+ * @param tag		Tag
+ * @return	TRUE if the block tag is the last tag in the descriptor block,
+ *		FALSE otherwise.
+ */
 static __bool
 jbd2_is_last_tag(
 	bd2_handle_t *handle,
