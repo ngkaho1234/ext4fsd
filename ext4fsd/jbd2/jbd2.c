@@ -1136,3 +1136,10 @@ NTSTATUS jbd2_close_handle(jbd2_handle_t *handle)
 	jbd2_flush(handle, &event, &status);
 	return status;
 }
+
+/*
+ * NOTES:
+ *
+ * It sounds better if we remove a transaction from checkpoint queue
+ * when all its buffer is flushed to persistent storage...
+ */
