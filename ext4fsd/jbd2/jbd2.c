@@ -568,28 +568,29 @@ jbd2_tag_size(
 }
 
 /**
- * @brief Check if the block tag is the last tag in the descriptor block
+ * @brief Test the whether @p flag is set
  * @param handle	Handle to journal file
  * @param tag		Tag
- * @return	TRUE if the block tag is the last tag in the descriptor block,
- *		FALSE otherwise.
+ * @param flag		Flag to be tested on
+ * @return	TRUE or FALSE
  */
 static __bool
-jbd2_is_last_tag(
+jbd2_test_flag(
 	bd2_handle_t *handle,
-	void *tag)
+	void *tag,
+	int flag)
 {
 	if (jbd2_has_feature_csum3(handle)) {
 		journal_block_tag3_t *tag3;
 		tag3 = (journal_block_tag3_t *)tag;
 
-		if (be32_to_cpu(tag3->t_flags) & JBD2_FLAG_LAST_TAG)
+		if (be32_to_cpu(tag3->t_flags) & flag)
 			return TRUE;
 	} else {
 		journal_block_tag_t *tag1;
 		tag1 = (journal_block_tag3_t *)tag;
 
-		if (be16_to_cpu(tag1->t_flags) & JBD2_FLAG_LAST_TAG)
+		if (be16_to_cpu(tag1->t_flags) & flag)
 			return TRUE;
 	}
 	return FALSE;
@@ -618,7 +619,7 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
 		journal_block_tag_t *tag;
 		tag = (journal_block_tag_t *)tagp;
 
-		if (jbd2_is_last_tag(handle, tag))
+		if (jbd2_test_flag(handle, tag, JBD2_FLAG_LAST_TAG))
 			break;
 	}
 
@@ -710,12 +711,16 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		}
 
 		RtlCopyMemory(to_buf, from_buf, handle->jh_blocksize);
+		if (jbd2_test_flag(handle, tag, JBD2_FLAG_ESCAPE)) {
+			journal_header_t *jh_buf = to_buf;
+			jh_buf->h_magic = cpu_to_be32(JBD2_MAGIC_NUMBER);
+		}
 		CcSetDirtyPinnedData(to_bcb, NULL);
 
 		CcUnpinData(from_bcb);
 		CcUnpinData(to_bcb);
 
-		if (jbd2_is_last_tag(handle, tag))
+		if (jbd2_test_flag(handle, tag, JBD2_FLAG_LAST_TAG))
 			break;
 	}
 
