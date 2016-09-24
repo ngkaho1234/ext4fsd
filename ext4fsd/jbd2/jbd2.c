@@ -596,6 +596,32 @@ jbd2_test_flag(
 	return FALSE;
 }
 
+/**
+ * @brief Obtain the checksum stored in block tag
+ * @param handle	Handle to journal file
+ * @param tag		Tag
+ * @return	Checksum value stored in block tag body
+ */
+static __u32
+jbd2_tag_csum(
+	bd2_handle_t *handle,
+	void *tag)
+{
+	__u32 csum = ~0;
+	if (jbd2_has_feature_csum3(handle)) {
+		journal_block_tag3_t *tag3;
+		tag3 = (journal_block_tag3_t *)tag;
+
+		csum = be32_to_cpu(tag3->t_checksum);
+	} else {
+		journal_block_tag_t *tag1;
+		tag1 = (journal_block_tag3_t *)tag;
+
+		csum = be16_to_cpu(tag1->t_checksum);
+	}
+	return csum;
+}
+
 /*
  * @brief Count the number of in-use tags in a journal descriptor block.
  * @param handle	Handle to journal file
@@ -637,7 +663,6 @@ static int jbd2_count_tags(jbd2_handle_t *handle, void *buf)
  */
 static NTSTATUS
 jbd2_blocks_csum_verify(jbd2_handle_t *handle,
-			jbd2_tid_t tid,
 			jbd2_logblk_t blocknr,
 			void *buf)
 {
@@ -647,8 +672,8 @@ jbd2_blocks_csum_verify(jbd2_handle_t *handle,
 	int blocksize = handle->jh_blocksize;
 	int tag_bytes = jbd2_min_tag_size(handle);
 
-	if (jbd2_has_csum_v2or3(handle))
-		blocksize -= sizeof(journal_block_tail_t);
+	if (!jbd2_has_csum_v2or3(handle))
+		return STATUS_SUCCESS;
 
 	tagp = (char *)buf + sizeof(journal_header_t);
 	tag = (journal_block_tag_t *)tagp;
@@ -656,22 +681,14 @@ jbd2_blocks_csum_verify(jbd2_handle_t *handle,
 	for (; tagp - buf + tag_bytes <= blocksize;
 			tagp += jbd2_tag_size(handle, tagp), nr++) {
 		__bool cc_ret;
-		jbd2_tid_t re_tid;
+		__u32 calculated;
 		LARGE_INTEGER tmp;
 		journal_block_tag_t *tag;
 		jbd2_fsblk_t fs_blocknr;
-		jbd2_revoke_entry_t *entry;
-		void *from_bcb, *from_buf, *to_bcb, *to_buf;
+		void *from_bcb, *from_buf;
 		tag = (journal_block_tag_t *)tagp;
 
 		fs_blocknr = jbd2_tag_blocknr(handle, tag);
-		entry = jbd2_revoke_entry_find(handle, fs_blocknr);
-		if (entry) {
-			re_tid = entry->re_tid;
-			jbd2_revoke_entry_put(handle, entry);
-			if (jbd2_tid_cmp(tid, re_tid) <= 0)
-				continue;
-		}
 
 		/*
 		 * XXX:	We do not support multiple clients, since
@@ -693,32 +710,28 @@ jbd2_blocks_csum_verify(jbd2_handle_t *handle,
 			break;
 		}
 
-		tmp.QuadPart = blocknr_to_offset(
-					fs_blocknr,
-					handle->jh_blocksize);
-		cc_ret = CcPreparePinWrite(
-					handle->jh_client_file,
-					&tmp,
-					handle->jh_blocksize,
-					TRUE,
-					PIN_WAIT,
-					&to_bcb,
-					&to_buf);
-		if (!cc_ret) {
-			status = STATUS_UNEXPECTED_IO_ERROR;
-			CcUnpinData(from_bcb);
-			break;
+		if (jbd2_has_feature_csum2(handle)) {
+			calculated = jbd2_chksum(
+							handle,
+							handle->jh_csum_seed,
+							from_buf,
+							handle->jh_blocksize) & 0xffff;
+		} else {
+			calculated = jbd2_chksum(
+							handle,
+							handle->jh_csum_seed,
+							from_buf,
+							handle->jh_blocksize);
 		}
-
-		RtlCopyMemory(to_buf, from_buf, handle->jh_blocksize);
-		if (jbd2_test_flag(handle, tag, JBD2_FLAG_ESCAPE)) {
-			journal_header_t *jh_buf = to_buf;
-			jh_buf->h_magic = cpu_to_be32(JBD2_MAGIC_NUMBER);
+		if (calculated != jbd2_tag_csum(handle, tag)) {
+			dbg_print("Checksum calculation fails on handle %p\n", handle);
+			status = STATUS_UNSUCCESSFUL;
 		}
-		CcSetDirtyPinnedData(to_bcb, NULL);
 
 		CcUnpinData(from_bcb);
-		CcUnpinData(to_bcb);
+
+		if (status == STATUS_UNSUCCESSFUL)
+			break;
 
 		if (jbd2_test_flag(handle, tag, JBD2_FLAG_LAST_TAG))
 			break;
@@ -951,12 +964,21 @@ NTSTATUS jbd2_replay_one_pass(
 
 				nr_tags = jbd2_count_tags(handle, jh_buf);
 				if (phase != JBD2_PHASE_REPLAY) {
+					if (phase == JBD2_PHASE_SCAN) {
+						status = jbd2_blocks_csum_verify(
+									handle,
+									curr_block,
+									jh_buf);
+						if (!NT_SUCCESS(status))
+							goto end;
+					}
 					curr_blocknr += nr_tags + 1;
 					jbd2_wrap(handle, curr_blocknr);
 					break;
 				} else {
 					status = jbd2_replay_descr_block(
 								handle,
+								curr_tid,
 								curr_blocknr,
 								jh_buf);
 					if (!NT_SUCCESS(status))
