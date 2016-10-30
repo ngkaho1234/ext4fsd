@@ -26,8 +26,8 @@ void ext4_cache_init_map(
 
 /**
  * @brief	The routine performs a CcUnitializeCacheMap to LargeZero synchronously. 
- *		That is it waits on the Cc event.  This call is useful when we want to be certain
- *		when a close will actually some in.
+ *			That is it waits on the Cc event.  This call is useful when we want to be certain
+ *			when a close will actually some in.
  */
 void ext4_cache_sync_uninit_map(
 		struct ext4_irp_ctx *irp_ctx,

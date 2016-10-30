@@ -1066,6 +1066,39 @@ cleanup:
 }
 
 /**
+ * @brief	The routine performs a CcUnitializeCacheMap to LargeZero synchronously.
+ * 			That is it waits on the Cc event.  This call is useful when we want to be certain
+ * 			when a close will actually some in.
+ */
+void jbd2_cache_sync_uninit_map(PFILE_OBJECT file_object)
+{
+	CACHE_UNINITIALIZE_EVENT uninit_complete_event;
+	NTSTATUS wait_status;
+	LARGE_INTEGER zero_offset;
+
+	zero_offset.QuadPart = 0;
+
+	KeInitializeEvent(
+		&uninit_complete_event.Event,
+		SynchronizationEvent,
+		FALSE);
+
+	CcUninitializeCacheMap(
+		file_object,
+		&zero_offset,
+		&uninit_complete_event);
+
+	wait_status = KeWaitForSingleObject(
+		&uninit_complete_event.Event,
+		Executive,
+		KernelMode,
+		FALSE,
+		NULL);
+
+	NT_ASSERT(wait_status == STATUS_SUCCESS);
+}
+
+/**
  * @brief Open a journal file (we won't append the file of course...)
  * @param client_file	FILE_OBJECT of client file
  * @param log_file		FILE_OBJECT of journal file
@@ -1074,11 +1107,11 @@ cleanup:
  * @param handle_ret	New handle returned if the journal file is successfully
  *						opened
  * @return	STATUS_SUCCESS if we successfully open a journal file, 
- *			STATUS_DISK_CORRUPT_ERROR if the journal file is corrupted, 
- *			STATUS_UNRECOGNIZED_VOLUME if there are unsupported, 
- *				features enabled, 
- *			STATUS_INSUFFICIENT_RESOURCES if there isn't enough resources, 
- *			STATUS_UNSUCCESSFUL otherwise.
+ * 			STATUS_DISK_CORRUPT_ERROR if the journal file is corrupted, 
+ * 			STATUS_UNRECOGNIZED_VOLUME if there are unsupported, 
+ * 				features enabled, 
+ * 			STATUS_INSUFFICIENT_RESOURCES if there isn't enough resources, 
+ * 			STATUS_UNSUCCESSFUL otherwise.
  */
 NTSTATUS jbd2_open_handle(
 				PFILE_OBJECT client_file,
@@ -1088,6 +1121,11 @@ NTSTATUS jbd2_open_handle(
 				jbd2_handle_t **handle_ret)
 {
 	void *bcb = NULL;
+	__bool lbcb_cache_inited = FALSE;
+	__bool revoke_cache_inited = FALSE;
+	__bool lock_inited = FALSE;
+	journal_superblock_t *jh_sb = NULL;
+
 	__bool cc_ret = FALSE;
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	CC_FILE_SIZES cc_size;
@@ -1095,6 +1133,7 @@ NTSTATUS jbd2_open_handle(
 	LARGE_INTEGER tmp;
 	journal_superblock_t *sb_buf;
 	NT_ASSERT(handle_ret);
+
 	cc_size.AllocationSize.QuadPart = log_size;
 	cc_size.FileSize.QuadPart = log_size;
 	cc_size.ValidDataLength.QuadPart = log_size;
@@ -1176,35 +1215,39 @@ NTSTATUS jbd2_open_handle(
 			__leave;
 		}
 
-		handle->jh_sb = ExAllocatePoolWithTag(
-							NonPagedPool,
-							sizeof(journal_superblock_t),
-							JBD2_SUPERBLOCK_TAG);
-		if (!handle->jh_sb) {
+		jh_sb = ExAllocatePoolWithTag(
+						NonPagedPool,
+						sizeof(journal_superblock_t),
+						JBD2_SUPERBLOCK_TAG);
+		if (!jh_sb) {
 			status = STATUS_INSUFFICIENT_RESOURCES;
 			__leave;
 		}
 
+		drv_mutex_init(&handle->jh_lock);
+		lock_inited = TRUE;
+		handle->jh_sb = jh_sb;
+
 		/* Keep an in-memory copy of superblock fields */
-		RtlCopyMemory(handle->jh_sb, sb_buf, sizeof(journal_superblock_t));
+		RtlCopyMemory(jh_sb, sb_buf, sizeof(journal_superblock_t));
 
 		/* Initialize the fields in journal handle */
 		handle->jh_log_file = log_file;
 		handle->jh_client_file = client_file;
-		drv_mutex_init(&handle->jh_lock);
+
 		handle->jh_blocksize = blocksize;
-		handle->jh_blockcnt = be32_to_cpu(handle->jh_sb->s_maxlen);
-		RtlCopyMemory(handle->jh_uuid, handle->jh_sb, UUID_SIZE);
-		handle->jh_max_txn = be32_to_cpu(handle->jh_sb->s_max_transaction);
+		handle->jh_blockcnt = be32_to_cpu(jh_sb->s_maxlen);
+		RtlCopyMemory(handle->jh_uuid, jh_sb, UUID_SIZE);
+		handle->jh_max_txn = be32_to_cpu(jh_sb->s_max_transaction);
 		handle->jh_running_txn = NULL;
 		InitializeListHead(&handle->jh_txn_queue);
 
 		/* Calculate the head, tail of logging area in journal */
-		handle->jh_start = be32_to_cpu(handle->jh_sb->s_first);
+		handle->jh_start = be32_to_cpu(jh_sb->s_first);
 		handle->jh_end = handle->jh_blockcnt - 1;
 
 		/* Calculate the head, tail and nr. of blocks of free area in journal */
-		handle->jh_free_start = be32_to_cpu(handle->jh_sb->s_first);
+		handle->jh_free_start = be32_to_cpu(jh_sb->s_first);
 		handle->jh_free_end = handle->jh_blockcnt - 1;
 		handle->jh_free_blockcnt = handle->jh_blockcnt - 1;
 
@@ -1217,6 +1260,7 @@ NTSTATUS jbd2_open_handle(
 				sizeof(jbd2_lbcb_t),
 				JBD2_LBCB_TABLE_TAG,
 				0);
+		lbcb_cache_inited = TRUE;
 		ExInitializeNPagedLookasideList(
 				&handle->jh_revoke_cache,
 				NULL,
@@ -1225,6 +1269,7 @@ NTSTATUS jbd2_open_handle(
 				sizeof(jbd2_revoke_entry_t),
 				JBD2_REVOKE_TABLE_TAG,
 				0);
+		revoke_cache_inited = TRUE;
 
 		/* Initialize block table and revoke table */
 		RB_INIT(&handle->jh_lbcb_table);
@@ -1234,9 +1279,16 @@ NTSTATUS jbd2_open_handle(
 			CcUnpinData(bcb);
 
 		if (!NT_SUCCESS(status)) {
-			if (handle->jh_sb)
-				ExFreePoolWithTag(handle->jh_sb, JBD2_SUPERBLOCK_TAG);
+			if (jh_sb)
+				ExFreePoolWithTag(jh_sb, JBD2_SUPERBLOCK_TAG);
+			if (lock_inited)
+				drv_mutex_destroy(&handle->jh_lock);
+			if (lbcb_cache_inited)
+				ExDeleteNPagedLookasideList(&handle->jh_lbcb_cache);
+			if (revoke_cache_inited)
+				ExDeleteNPagedLookasideList(&handle->jh_revoke_cache);
 
+			jbd2_cache_sync_uninit_map(log_file);
 			ExFreePoolWithTag(handle, JBD2_POOL_TAG);
 		} else {
 			*handle_ret = handle;
@@ -1260,6 +1312,13 @@ NTSTATUS jbd2_close_handle(jbd2_handle_t *handle)
 	KEVENT event;
 
 	jbd2_flush(handle, &event, &status);
+
+	ExFreePoolWithTag(handle->jh_sb, JBD2_SUPERBLOCK_TAG);
+	drv_mutex_destroy(&handle->jh_lock);
+	ExDeleteNPagedLookasideList(&handle->jh_lbcb_cache);
+	ExDeleteNPagedLookasideList(&handle->jh_revoke_cache);
+	jbd2_cache_sync_uninit_map(handle->jh_log_file);
+	ExFreePoolWithTag(handle, JBD2_POOL_TAG);
 	return status;
 }
 

@@ -123,6 +123,18 @@ static inline void drv_mutex_init(drv_mutex_t *mutex)
 }
 
 /**
+* @brief	Destroy a mutex
+*
+* @param mutex	The mutex to be destroyed
+*/
+static inline void drv_mutex_destroy(drv_mutex_t *mutex)
+{
+	/*
+	 * NOOP for fast mutex
+	 */
+}
+
+/**
  * @brief	Acquire access to mutex
  *
  * @param mutex	The mutex to be acquired
