@@ -12,7 +12,7 @@ enum {
 
  /**
   * @details	Maintain information about the progress of the recovery job, so that
-  *			the different passes can carry information between them.
+  *				the different passes can carry information between them.
   * @remarks	Copied from e2fsprogs/e2fsck/recovery.c
   */
 struct recovery_info {
@@ -86,7 +86,7 @@ jbd2_lbcb_alloc(jbd2_handle_t *handle)
 /**
  * @brief Deallocate memory for a lbcb
  * @param handle	Handle to journal file
- * @param lbcb	A pointer to the lbcb that is being deallocated
+ * @param lbcb		A pointer to the lbcb that is being deallocated
  */
 static void
 jbd2_lbcb_free(
@@ -99,7 +99,7 @@ jbd2_lbcb_free(
 
 /**
  * @brief	Allocate memory for caller-supplied data plus some
- *		additional memory for use by the revoke table entry
+ *			additional memory for use by the revoke table entry
  * @param handle Handle to journal file
  * @return Allocated buffer address
  */
@@ -128,9 +128,9 @@ RB_GENERATE(jbd2_generic_table, jbd2_node_hdr, th_node, jbd2_generic_table_cmp);
 
 /**
  * @brief	Get and reference an LBCB from LBCB table which represents
- *		given @p blocknr. 
- *		If the LBCB doesn't exist, an LBCB will be allocated an inserted into
- *		the LBCB table, and its jl_is_new flag will be set to TRUE.
+ *			given @p blocknr. 
+ *			If the LBCB doesn't exist, an LBCB will be allocated an inserted into
+ *			the LBCB table, and its jl_is_new flag will be set to TRUE.
  * @param handle	Handle to journal file
  * @param blocknr	Block number
  * @return an LBCB
@@ -167,7 +167,7 @@ jbc2_lbcb_get(
 /**
  * @brief	Dereference an LBCB
  * @param handle	Handle to journal file
- * @param lbcb	The LBCB caller got from jbc2_lbcb_get()
+ * @param lbcb		The LBCB caller got from jbc2_lbcb_get()
  */
 static void
 jbd2_lbcb_put(
@@ -186,9 +186,9 @@ jbd2_lbcb_put(
 
 /**
  * @brief	Get and reference revoke entry from revoke entry table which
- *		represents given @p blocknr.
- *		If the LBCB doesn't exist, an LBCB will be allocated an inserted into
- *		the LBCB table, and its jl_is_new flag will be set to TRUE.
+ *			represents given @p blocknr.
+ *			If the LBCB doesn't exist, an LBCB will be allocated an inserted into
+ *			the LBCB table, and its jl_is_new flag will be set to TRUE.
  * @param handle	Handle to journal file
  * @param blocknr	Block number
  * @return an LBCB
@@ -224,11 +224,11 @@ jbd2_revoke_entry_get(
 
 /*
  * @brief	Get and reference revoke entry from revoke entry table which
- *		represents given @p blocknr.
+ *			represents given @p blocknr.
  * @param handle	Handle to journal file
  * @param blocknr	Block number
  * @return	an LBCB if it exists in the revoke entry table,
- * 		otherwise NULL is returned
+ * 			otherwise NULL is returned
  */
 static jbd2_revoke_entry_t *
 jbd2_revoke_entry_find(
@@ -254,7 +254,7 @@ jbd2_revoke_entry_find(
 /**
  * @brief	Dereference a revoke entry
  * @param handle	Handle to journal file
- * @param lbcb	The revoke entry caller got from jbc2_revoke_entry_get()
+ * @param lbcb		The revoke entry caller got from jbc2_revoke_entry_get()
  */
 static void
 jbd2_revoke_entry_put(
@@ -363,7 +363,7 @@ static __bool jbd2_verify_superblock(journal_superblock_t *sb)
 /**
  * @brief Verify whether features in superblock are supported
  * @param features	Feature field
- * @param mask	Feature mask
+ * @param mask		Feature mask
  * @return TRUE if all features are supported, otherwise FALSE
  */
 static __bool jbd2_features_supported(__be32 features, __u32 mask)
@@ -405,7 +405,7 @@ static __bool jbd2_verify_descr_block(
 }
 
 static __bool jbd2_commit_block_csum_verify(
-				jbd2_handle *handle,
+				jbd2_handle_t *handle,
 				void *buf)
 {
 	journal_commit_header_t *commit_hdr;
@@ -764,7 +764,6 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 		blocksize -= sizeof(journal_block_tail_t);
 
 	tagp = (char *)buf + sizeof(journal_header_t);
-	tag = (journal_block_tag_t *)tagp;
 
 	for (; tagp - buf + tag_bytes <= blocksize;
 			tagp += jbd2_tag_size(handle, tagp), nr++) {
@@ -842,7 +841,7 @@ jbd2_replay_descr_block(jbd2_handle_t *handle,
 
 /**
  * @brief	Scan revoke entries in a revocation block and
- *		insert them into revoke table
+ *			insert them into revoke table
  * @param handle	Handle to journal file
  * @param tid		Transaction ID
  * @param buf		Block buffer
@@ -1068,12 +1067,12 @@ cleanup:
 
 /**
  * @brief Open a journal file (we won't append the file of course...)
- * @param client_file		FILE_OBJECT of client file
+ * @param client_file	FILE_OBJECT of client file
  * @param log_file		FILE_OBJECT of journal file
  * @param log_size		Size of journal file in bytes
- * @param blocksize	Block size (must match the block size of client)
+ * @param blocksize		Block size (must match the block size of client)
  * @param handle_ret	New handle returned if the journal file is successfully
- *					opened
+ *						opened
  * @return	STATUS_SUCCESS if we successfully open a journal file, 
  *			STATUS_DISK_CORRUPT_ERROR if the journal file is corrupted, 
  *			STATUS_UNRECOGNIZED_VOLUME if there are unsupported, 
@@ -1252,7 +1251,7 @@ void jbd2_flush(
 		KEVENT *event,
 		NTSTATUS *status)
 {
-
+	
 }
 
 NTSTATUS jbd2_close_handle(jbd2_handle_t *handle)
